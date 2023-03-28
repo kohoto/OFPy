@@ -1,9 +1,8 @@
-import subprocess
 import os
 import numpy as np
 from edit_polyMesh import read_OF_points
 from read_field import read_OF_p, read_OF_U
-import GsPy3DModel.GsPy3DModel.model_3D as m3d
+from ..GsPy3DModel.GsPy3DModel import model_3D as m3d
 
 # read nx, ny, size from the input file
 case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10'
