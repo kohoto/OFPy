@@ -4,7 +4,7 @@ from . import OFPy_deform_mesh
 
 dissolCases_directory = 'C:/Users/tohoko.tj/Documents/dissolCases_230329'
 # dissolCases_directory = '/scratch/user/tohoko.tj/dissolCases/dissolCases_230327/'
-start_proj_name = 'lambda2_0-2_0-stdev0_025'
+start_proj_name = '/scratch/user/tohoko.tj/dissolCases/start_proj'
 
 
 def prep_batch(dissolCases_directory, start_proj_name):
@@ -12,10 +12,6 @@ def prep_batch(dissolCases_directory, start_proj_name):
     # get polyMesh from etching folder.
     os.chdir(dissolCases_directory)
     dir_list = os.listdir(dissolCases_directory)
-    dir_list.remove(start_proj_name)
-
-    for case in cases:
-        os.system('chmod 775 ' + start_proj_name + '/' + case + '/PararellRun ' + start_proj_name + '/' + case + '/SingleRun ' + start_proj_name + '/' + case + '/Clean')
 
     # copy cases
     for new_proj_name in dir_list:
@@ -36,7 +32,6 @@ def prep_batch(dissolCases_directory, start_proj_name):
 
 
     # create rough surface mesh
-    dir_list.append(start_proj_name)
     for proj in dir_list:
         OFPy_deform_mesh.prep_case(proj, close=False)
 
