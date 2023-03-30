@@ -1,5 +1,5 @@
 import os
-from OFPy_deform_mesh import prep_case
+from . import OFPy_deform_mesh
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
 
 dissolCases_directory = 'C:/Users/tohoko.tj/Documents/dissolCases_230329'
@@ -38,5 +38,5 @@ def prep_batch(dissolCases_directory, start_proj_name):
     # create rough surface mesh
     dir_list.append(start_proj_name)
     for proj in dir_list:
-        prep_case(proj, close=False)
+        OFPy_deform_mesh.prep_case(proj, close=False)
 

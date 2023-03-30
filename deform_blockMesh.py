@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from read_field import write_OF_field
+from . import read_field
 import matplotlib.pyplot as plt
 
 def deform_blockMesh(inp, df_points, roughness=None):  # this
@@ -39,7 +39,7 @@ def deform_blockMesh(inp, df_points, roughness=None):  # this
         lines.append("total etched volume is: " + str(61023.7 * dx * dy * np.sum(etched_wids)) + " in3")  # 61023.7 is m3 -> in3
         # write etched_wids field file
         etched_wids = pd.DataFrame(data=etched_wids)
-        write_OF_field('etched_wids', len(etched_wids), etched_wids, './')
+        read_field.write_OF_field('etched_wids', len(etched_wids), etched_wids, './')
         # 0.99 is not to completely close the touching points
         min_width = 0.99 * np.min(abs(wids), axis=1)  # search min openings along y axis at each x-coord
         wids -= np.tile(min_width, (ny+1, 1)).T

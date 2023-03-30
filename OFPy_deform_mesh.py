@@ -2,8 +2,8 @@ import subprocess
 import os
 import time
 import signal
-from edit_polyMesh import write_OF_polyMesh, read_OF_points, read_OF_boundary
-from deform_blockMesh import deform_blockMesh
+from . import edit_polyMesh
+from . import deform_blockMesh
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
 
@@ -96,16 +96,16 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
         roughness = gsp.affine(sim_array[0], mean, stdev).T
 
     start = time.time()
-    # df_points = read_OF_points(f"conductivity/{}/polyMesh/points".int(num), nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    df_points = read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    # df_points = edit_polyMesh.read_OF_points(f"conductivity/{}/polyMesh/points".int(num), nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
     df_points['index_column'] = df_points.index
 
     if close:
-        df_points = deform_blockMesh(inp, df_points)
+        df_points = deform_blockMesh.deform_blockMesh(inp, df_points)
     else:
-        df_points = deform_blockMesh(inp, df_points, roughness=roughness)  # roughness file is in [inch]
+        df_points = deform_blockMesh.deform_blockMesh(inp, df_points, roughness=roughness)  # roughness file is in [inch]
 
-    write_OF_polyMesh('points', len(df_points), df_points)  # write new mesh in constant/polyMesh/
+    edit_polyMesh.write_OF_polyMesh('points', len(df_points), df_points)  # write new mesh in constant/polyMesh/
     end = time.time()
 
     print("elapsed time: " + str(end - start) + " s")

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from edit_polyMesh import get_OF_headers
+from . import edit_polyMesh
 
 def read_OF_U(fpath, nrows):
     df = pd.read_csv(fpath, skiprows=23, nrows=nrows, sep=" ", header=None, names=["x", "y", "z"])
@@ -17,7 +17,7 @@ def read_OF_p(fpath, nrows):
 
 def write_OF_field(object, ndata, df, path, delete_idx = []):
     with open(path + object, "w+") as f:
-        f.writelines(get_OF_headers(object, ndata))
+        f.writelines(edit_polyMesh.get_OF_headers(object, ndata))
 
         if object == "etched_wids":
             line = '{row0:.9f}\n'

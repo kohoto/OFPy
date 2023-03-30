@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from edit_polyMesh import read_OF_points
-from read_field import read_OF_p, read_OF_U
+from . import edit_polyMesh
+from . import read_field
 from GsPy3DModel import model_3D as m3d
 
 # read nx, ny, size from the input file
@@ -36,9 +36,9 @@ def calc_cond(case_directory):
        last_timestep_dir = str(max([int(a) for a in os.listdir('.') if a.isnumeric()]))
        lines.append("Max timestep is: " + last_timestep_dir + ". Extract p and U from this dir.")
 
-       df_points = read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-       df_U = read_OF_U(last_timestep_dir + "/U", nrows=nx * ny * nz)
-       df_p = read_OF_p(last_timestep_dir + "/p", nrows=nx * ny * nz)
+       df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+       df_U = read_field.read_OF_U(last_timestep_dir + "/U", nrows=nx * ny * nz)
+       df_p = read_field.read_OF_p(last_timestep_dir + "/p", nrows=nx * ny * nz)
 
        dx = lx / nx
        dy = ly / ny
