@@ -2,10 +2,7 @@ import numpy as np
 import pandas as pd
 
 pd.options.mode.chained_assignment = None  # default='warn'
-from scipy.interpolate import interp2d
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator
 
 
 def read_OF_points(fpath, nrows):

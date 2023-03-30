@@ -7,18 +7,18 @@ from GsPy3DModel import model_3D as m3d
 
 # this is to use from windows pc.
 
-dissolCases_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/dissolCases_230327/'
+dissolCases_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/dissolCases_230329/'
 
 
 def main():
     lambda_xs = np.arange(7.0, 1.0)
-    Lx = 7.0; Ly = 1.0; Lz = 0.1; cellsize = 0.025; nz = 10
+    Lx = 7.0; Ly = 1.7; Lz = 0.1; cellsize = 0.025; nz = 10
 
     seed = 7500
     # stdevs = np.round(np.arange(0.025, 0.5, 0.025), 3)
     stdevs = np.array([0.025])
-    lambda_xs = np.round(np.arange(1.0, 7.0, 1.0), 3)
-    lambda_ys = np.array([1.0])
+    lambda_xs = np.round(np.arange(2.0, 7.0, 1.0), 3)
+    lambda_ys = np.array([2.0, 3.0])
     # lambda_ys = np.round(np.arange(0.5, 1.5, 0.5), 3)
     lambda_xs, lambda_ys, stdevs = np.meshgrid(lambda_xs, lambda_ys, stdevs)
 

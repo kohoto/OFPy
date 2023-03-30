@@ -1,5 +1,5 @@
 import os
-from OFPy_close import prep_case
+from OFPy_deform_mesh import prep_case
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
 
 dissolCases_directory = 'C:/Users/tohoko.tj/Documents/dissolCases_230329'
