@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
-from . import read_field
 import matplotlib.pyplot as plt
+import platform
+if platform.system() == 'Windows':
+    import read_field
+else:
+    from . import read_field
 
 def deform_blockMesh(inp, df_points, roughness=None):  # this
     if roughness is None:
@@ -42,7 +46,7 @@ def deform_blockMesh(inp, df_points, roughness=None):  # this
         read_field.write_OF_field('etched_wids', len(etched_wids), etched_wids, './')
         # 0.99 is not to completely close the touching points
         min_width = 0.99 * np.min(abs(wids), axis=1)  # search min openings along y axis at each x-coord
-        wids -= np.tile(min_width, (ny+1, 1)).T
+        wids -= np.tile(min_width, (ny+1, 1)).T # almost all time the min_width is at the edge.
 
         np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
     else:  # shift

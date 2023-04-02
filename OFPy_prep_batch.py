@@ -20,7 +20,7 @@ def prep_batch(dissolCases_directory, start_proj_name):
             new_case_dir = new_proj_name + '/' + case
 
             cmd = ['mkdir ' + new_case_dir + '/constant;',
-                   'cp -r ' + start_case_dir + '/constant ' + new_case_dir + ';',
+                   'cp -r ' + start_case_dir + '/constant/* ' + new_case_dir + '/constant;',
                    'cp -r ' + start_case_dir + '/system ' + new_case_dir + ';',
                    'cp -r ' + start_case_dir + '/Zero ' + new_case_dir + ';',
                    'cp ' + start_case_dir + '/Clean ' + new_case_dir + ';',

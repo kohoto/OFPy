@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
-from . import edit_polyMesh
+import platform
+
+if platform.system() == 'Windows':
+    import edit_polyMesh
+else:
+    from . import edit_polyMesh
 
 def read_OF_U(fpath, nrows):
     df = pd.read_csv(fpath, skiprows=23, nrows=nrows, sep=" ", header=None, names=["x", "y", "z"])

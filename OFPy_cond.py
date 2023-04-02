@@ -1,20 +1,29 @@
 import os
 import numpy as np
-from . import edit_polyMesh
-from . import read_field
+import platform
 from GsPy3DModel import model_3D as m3d
 
+if platform.system() == 'Windows':
+       import edit_polyMesh
+       import read_field
+else:
+       from . import edit_polyMesh
+       from . import read_field
+
+
 # read nx, ny, size from the input file
-case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10'
+case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/dissolCases_230327/lambda1_0-1_0-stdev0_025'
+# case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10'
 
 
 def calc_cond(case_directory):
        input_file_path = case_directory + '/inp'
        inp_tuple = m3d.read_input(input_file_path)
 
-       inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "dx": inp_tuple[5], "nx": int(inp_tuple[3] / inp_tuple[5]),
-              "ny": int(inp_tuple[4] / inp_tuple[5]), "nz": 4, "lz": 0.1,
-              "mean": inp_tuple[7], "stdev": inp_tuple[8], "hmaj1": inp_tuple[9], "hmin1": inp_tuple[10]}
+       inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6],
+              "nx": int(inp_tuple[3] / inp_tuple[6]),
+              "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
+              "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12]}
 
        """ calc some parameters from inputs """
        # number of grids
@@ -67,3 +76,7 @@ def calc_cond(case_directory):
        # write info = cond, etched width
        lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft")
        open(case_directory + '/cond', "w").writelines(lines)
+
+
+if __name__=="__main__":
+       calc_cond(case_directory)

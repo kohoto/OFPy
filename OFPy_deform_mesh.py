@@ -1,19 +1,23 @@
 import subprocess
 import os
 import time
-import signal
-from . import edit_polyMesh
-from . import deform_blockMesh
+import platform
+
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
-
+if platform.system() == 'Windows':
+    import edit_polyMesh
+    import deform_blockMesh
+else:
+    from . import edit_polyMesh
+    from . import deform_blockMesh
 
 def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     initial_dir = os.getcwd()
     if close:
-        print('Preparing mesh for' + case_directory + '/closure')
+        print('Preparing mesh for ' + case_directory + '/closure')
     else:
-        print('Preparing mesh for' + case_directory + '/etching')
+        print('Preparing mesh for ' + case_directory + '/etching')
 
     # close = True
     # read nx, ny, size from the input file
