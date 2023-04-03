@@ -43,7 +43,7 @@ def calc_cond(case_directory):
        # get polyMesh from etching folder.
        os.chdir(case_directory + "/conductivity")
        last_timestep_dir = str(max([int(a) for a in os.listdir('.') if a.isnumeric()]))
-       lines.append("Max timestep is: " + last_timestep_dir + ". Extract p and U from this dir.")
+       lines.append("Max timestep is: " + last_timestep_dir + ". Extract p and U from this dir.\n")
 
        df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
        df_U = read_field.read_OF_U(last_timestep_dir + "/U", nrows=nx * ny * nz)
@@ -62,11 +62,16 @@ def calc_cond(case_directory):
        wids = zs[0, :, -1] - zs[0, :, 0]  # get width at inlet
        inlet_area = np.sum(wids) * dy
 
-
+       avg_w = np.mean(wids)
+       max_w = np.max(wids)
+       lines.append('average width is {0:.5f} inch\n'.format(avg_w / 0.0254))
+       lines.append('conductivity from cubic law is {0:.5e} md-ft\n'.format(avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084))
+       lines.append('conductivity from cubic law with max width is {0:.5e} md-ft\n'.format(max_w * max_w * max_w / 12 * 1.0133e15 * 3.28084))
        # get q. I can use a single value of U cause it will be the same everywhere due to BC.
-       q = U[0, 0, 0] * inlet_area
+       q = 5e-6
 
        dp = np.average(p[0, :, :]) - np.average(p[-1, :, :])  #TODO: need to consider further since each surf area of mesh is different.
+       dp_max = np.max(p[0, :, :]) - np.min(p[-1, :, :])
 
        # compute conductivity
        mu = 0.001
@@ -74,7 +79,11 @@ def calc_cond(case_directory):
 
        # if cond file not exist, make it
        # write info = cond, etched width
-       lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft")
+       lines.append("q: " + str(q * 60000) + " L/min\n")
+       lines.append("pressure diff: " + str(dp / 6895) + " psi\n")
+       lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft\n")
+       lines.append("max_conductivity: " + str(q * mu * lx / dp_max / ly * 1.01325e15 * 3.28084) + " md-ft\n")
+       lines.append("inlet area: " + str(inlet_area) + " m2\nu_for_cond = " + str(q / inlet_area) + "m/s")
        open(case_directory + '/cond', "w").writelines(lines)
 
 
