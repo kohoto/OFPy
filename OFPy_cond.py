@@ -69,8 +69,8 @@ def calc_cond(case_directory):
        lines.append('average width is {0:.5f} inch\n'.format(avg_w / 0.0254))
        lines.append('conductivity from cubic law is {0:.5e} md-ft\n'.format(avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084))
        lines.append('conductivity from cubic law with max width is {0:.5e} md-ft\n'.format(max_w * max_w * max_w / 12 * 1.0133e15 * 3.28084))
-       # q = U[0, 0, 0] * inlet_area
-       q = 50.e-6
+       q = U[0, 0, 0] * inlet_area
+       # q = 50.e-6  #
        dens = 1.e3 # [kg/m3]
        # in OF, p is in [m2/s2]. It's devided by density!!
        dp = (np.average(p[0, :, :]) - np.average(p[-1, :, :])) * dens  #TODO: need to consider further since each surf area of mesh is different.
