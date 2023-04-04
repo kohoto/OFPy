@@ -23,14 +23,14 @@ def prep_batch(dissolCases_directory, start_proj_name):
                    # remove constant except polyMesh
                    'rm ' + new_case_dir + '/constant/dynamicMeshDict;',
                    'rm ' + new_case_dir + '/constant/transportProperties;',
-                   'rm -rf' + new_case_dir + '/constant/bcInclude;',
+                   'rm -rf ' + new_case_dir + '/constant/bcInclude;',
                    # add symbolic links in constant except polyMesh
                    'ln -s ' + start_case_dir + '/constant/dynamicMeshDict ' + new_case_dir + '/constant/dynamicMeshDict;',
-                   'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir + '/constant/transportProperties;',
+                   'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir +'/constant/transportProperties;',
                    'ln -s ' + start_case_dir + '/constant/bcInclude ' + new_case_dir + '/constant/bcInclude;',
                    # add symbolic links for other dirs
-                   'ln -s ' + start_case_dir + '/system ' + new_case_dir + ';',
-                   'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + ';',
+                   'ln -s ' + start_case_dir + '/system ' + new_case_dir + '/system;',
+                   'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + '/Zero;',
                    # hard copy bash files
                    'cp ' + start_case_dir + '/Clean ' + new_case_dir + ';',
                    'cp ' + start_case_dir + '/PararellRun ' + new_case_dir + ';',
