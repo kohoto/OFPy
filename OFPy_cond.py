@@ -73,8 +73,8 @@ def calc_cond(case_directory):
        q = 50.e-6
        dens = 1.e3 # [kg/m3]
        # in OF, p is in [m2/s2]. It's devided by density!!
-       dp = (np.average(p[0, :, :]) - np.average(p[-1, :, :])) / dens  #TODO: need to consider further since each surf area of mesh is different.
-       dp_max = np.max(p[0, :, :]) - np.min(p[-1, :, :]) / dens
+       dp = (np.average(p[0, :, :]) - np.average(p[-1, :, :])) * dens  #TODO: need to consider further since each surf area of mesh is different.
+       dp_max = (np.max(p[0, :, :]) - np.min(p[-1, :, :])) * dens
 	
        # compute conductivity
        mu = 0.001
