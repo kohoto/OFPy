@@ -62,23 +62,26 @@ def calc_cond(case_directory):
        wids = zs[0, :, -1] - zs[0, :, 0]  # get width at inlet
        inlet_area = np.sum(wids) * dy
 
+
+       # get q. I can use a single value of U cause it will be the same everywhere due to BC.
        avg_w = np.mean(wids)
        max_w = np.max(wids)
        lines.append('average width is {0:.5f} inch\n'.format(avg_w / 0.0254))
        lines.append('conductivity from cubic law is {0:.5e} md-ft\n'.format(avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084))
        lines.append('conductivity from cubic law with max width is {0:.5e} md-ft\n'.format(max_w * max_w * max_w / 12 * 1.0133e15 * 3.28084))
-       # get q. I can use a single value of U cause it will be the same everywhere due to BC.
-       q = 5e-6
+       # q = U[0, 0, 0] * inlet_area
+       q = 50.e-6
 
        dp = np.average(p[0, :, :]) - np.average(p[-1, :, :])  #TODO: need to consider further since each surf area of mesh is different.
        dp_max = np.max(p[0, :, :]) - np.min(p[-1, :, :])
-
+	
        # compute conductivity
        mu = 0.001
        cond = q * mu * lx / dp / ly # [m3]
 
        # if cond file not exist, make it
        # write info = cond, etched width
+       lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft")
        lines.append("q: " + str(q * 60000) + " L/min\n")
        lines.append("pressure diff: " + str(dp / 6895) + " psi\n")
        lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft\n")
