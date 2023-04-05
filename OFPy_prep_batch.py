@@ -1,5 +1,7 @@
 import os
+import shutil
 from . import OFPy_deform_mesh
+
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
 
 # dissolCases_directory = 'C:/Users/tohoko.tj/Documents/dissolCases_230329'
@@ -21,13 +23,9 @@ def prep_batch(dissolCases_directory, start_proj_name):
 
             cmd = ['cp -rp ' + start_case_dir + '/constant ' + new_case_dir + '/constant;', # copy constant (cause polyMesh is unique)
                    # remove constant except polyMesh
-                   'rm ' + new_case_dir + '/constant/dynamicMeshDict;',
                    'rm ' + new_case_dir + '/constant/transportProperties;',
-                   'rm -rf ' + new_case_dir + '/constant/bcInclude;',
                    # add symbolic links in constant except polyMesh
-                   'ln -s ' + start_case_dir + '/constant/dynamicMeshDict ' + new_case_dir + '/constant/dynamicMeshDict;',
                    'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir +'/constant/transportProperties;',
-                   'ln -s ' + start_case_dir + '/constant/bcInclude ' + new_case_dir + '/constant/bcInclude;',
                    # add symbolic links for other dirs
                    'ln -s ' + start_case_dir + '/system ' + new_case_dir + '/system;',
                    'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + '/Zero;',
@@ -35,9 +33,23 @@ def prep_batch(dissolCases_directory, start_proj_name):
                    'cp ' + start_case_dir + '/Clean ' + new_case_dir + ';',
                    'cp ' + start_case_dir + '/PararellRun ' + new_case_dir + ';',
                    'cp ' + start_case_dir + '/SingleRun ' + new_case_dir + ';',
-                   # hard copy 0 folder (it will be rewritten by OF)
-                   'cp -rp ' + start_case_dir + '/Zero ' + new_case_dir + '/0;',
                    'chmod 775 ' + new_case_dir + '/PararellRun ' + new_case_dir + '/SingleRun ' + new_case_dir + '/Clean']
+
+            os.system(''.join(cmd))
+            # hard copy 0 files (will be rewritten by OF simulation)
+            shutil.copytree(start_case_dir + '/Zero', new_case_dir + '/0', dirs_exist_ok=True)
+            
+            if case == 'etching': # copy files for dynamic mesh
+                cmd = [# remove constant except polyMesh
+                       'rm ' + new_case_dir + '/constant/dynamicMeshDict;',
+                       'rm -rf ' + new_case_dir + '/constant/bcInclude;',
+                       # add symbolic links in constant except polyMesh
+                       'ln -s ' + start_case_dir + '/constant/dynamicMeshDict ' + new_case_dir + '/constant/dynamicMeshDict;',
+                       'ln -s ' + start_case_dir + '/constant/bcInclude ' + new_case_dir + '/constant/bcInclude;']
+            else:
+                cmd = ['rm ' + new_case_dir + '/constant/turbulenceProperties;',
+                       'ln -s ' + start_case_dir + '/constant/turbulenceProperties ' + new_case_dir +'/constant/turbulenceProperties;',]
+
             os.system(''.join(cmd))
 
 

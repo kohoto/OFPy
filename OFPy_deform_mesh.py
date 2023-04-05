@@ -126,15 +126,11 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     #                            "mkdir 0/polyMesh;"
     #                            "cp -r constant/polyMesh/points 0/polyMesh/points;"
     #                            , shell=True, executable='/bin/bash')
+    os.system('checkMesh -allGeometry -allTopology')
 
-    if close:
-        sp2 = subprocess.Popen(shell=True, executable='/bin/bash')
-    else:
-        sp2 = subprocess.Popen("mkdir 0/polyMesh;"
-                               "cp -r constant/polyMesh/points 0/polyMesh/points;"
-                               , shell=True, executable='/bin/bash')
-
-    sp2.communicate()
-    sp2.wait()
+    if not close:
+        if not os.path.exists('0/polyMesh'):
+            os.makedirs('0/polyMesh')
+        os.system('cp -r constant/polyMesh/points 0/polyMesh/points')
 
     os.chdir(initial_dir)
