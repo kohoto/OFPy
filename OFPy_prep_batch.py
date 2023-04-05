@@ -21,14 +21,15 @@ def prep_batch(dissolCases_directory, start_proj_name):
             start_case_dir = start_proj_name + '/' + case
             new_case_dir = new_proj_name + '/' + case
 
-            cmd = ['cp -rp ' + start_case_dir + '/constant ' + new_case_dir + '/constant;', # copy constant (cause polyMesh is unique)
+            cmd = ['mkdir ' + new_case_dir + ';',
+                   'cp -rp ' + start_case_dir + '/constant ' + new_case_dir + '/constant;', # copy constant (cause polyMesh is unique)
                    # remove constant except polyMesh
                    'rm ' + new_case_dir + '/constant/transportProperties;',
                    # add symbolic links in constant except polyMesh
                    'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir +'/constant/transportProperties;',
                    # add symbolic links for other dirs
-                   'ln -s ' + start_case_dir + '/system ' + new_case_dir + '/system;',
-                   'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + '/Zero;',
+                   'ln -s ' + start_case_dir + '/system ' + new_case_dir + ';',
+                   'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + ';',
                    # hard copy bash files
                    'cp ' + start_case_dir + '/Clean ' + new_case_dir + ';',
                    'cp ' + start_case_dir + '/PararellRun ' + new_case_dir + ';',
@@ -38,7 +39,7 @@ def prep_batch(dissolCases_directory, start_proj_name):
             os.system(''.join(cmd))
             # hard copy 0 files (will be rewritten by OF simulation)
             shutil.copytree(start_case_dir + '/Zero', new_case_dir + '/0', dirs_exist_ok=True)
-            
+
             if case == 'etching': # copy files for dynamic mesh
                 cmd = [# remove constant except polyMesh
                        'rm ' + new_case_dir + '/constant/dynamicMeshDict;',
