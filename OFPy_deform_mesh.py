@@ -21,7 +21,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
     # close = True
     # read nx, ny, size from the input file
-    input_file_path = '/inp'
+    input_file_path = 'inp'
 
     # sp3 = subprocess.Popen("module load GCC/8.3.0 OpenMPI/3.1.4; module load OpenFOAM/v1912; source ${FOAM_BASH};"
     #                        ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
@@ -114,6 +114,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
     print("elapsed time: " + str(end - start) + " s")
 
+    # for Lenovo linux
     # if close:
     #     sp2 = subprocess.Popen("source $WM_PROJECT_DIR/etc/bashrc;"
     #                            ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
@@ -126,7 +127,9 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     #                            "mkdir 0/polyMesh;"
     #                            "cp -r constant/polyMesh/points 0/polyMesh/points;"
     #                            , shell=True, executable='/bin/bash')
-    os.system('checkMesh -allGeometry -allTopology')
+    
+    # for grace
+    # os.system('checkMesh -allGeometry -allTopology')
 
     if not close:
         if not os.path.exists('0/polyMesh'):

@@ -15,7 +15,7 @@ else:
 
 
 def calc_cond(case_directory):
-    input_file_path = case_directory + '/inp'
+    input_file_path = case_directory + 'inp'
     inp_tuple = m3d.read_input(input_file_path)
 
     inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6],
@@ -45,7 +45,6 @@ def calc_cond(case_directory):
 
     df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
     # df_U = read_field.read_OF_U(last_timestep_dir + "/U", nrows=nx * ny * nz)
-    df_p = read_field.read_OF_p(last_timestep_dir + "/p", nrows=nx * ny * nz)
 
     q = read_out(case_directory + '/conductivity/q.out')
     pout = read_out(case_directory + '/conductivity/pout.out')
@@ -113,5 +112,5 @@ def read_out(fpath):
 
 if __name__ == "__main__":
     case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/no_roughness/no_roughness/'
-    # case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10'
+    # case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10/'
     calc_cond(case_directory)

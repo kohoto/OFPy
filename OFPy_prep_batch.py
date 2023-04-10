@@ -1,5 +1,4 @@
 import os
-import shutil
 from . import OFPy_deform_mesh
 
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
@@ -14,15 +13,18 @@ def prep_batch(dissolCases_directory, start_proj_name):
     # get polyMesh from etching folder.
     os.chdir(dissolCases_directory)
     dir_list = os.listdir(dissolCases_directory)
+    dir_list = [d for d in dir_list if os.path.isdir(os.path.join(dissolCases_directory, d))]
 
     # copy cases
     for new_proj_name in dir_list:
+        print('creating project files for ' + new_proj_name)
         for case in cases:
             start_case_dir = start_proj_name + '/' + case
             new_case_dir = new_proj_name + '/' + case
 
             cmd = ['mkdir ' + new_case_dir + ';',
                    'cp -rp ' + start_case_dir + '/constant ' + new_case_dir + '/constant;', # copy constant (cause polyMesh is unique)
+                   'cp -rp ' + start_case_dir + '/Zero ' + new_case_dir + '/0;',             # hard copy 0 files (will be rewritten by OF simulation)
                    # remove constant except polyMesh
                    'rm ' + new_case_dir + '/constant/transportProperties;',
                    # add symbolic links in constant except polyMesh
@@ -37,8 +39,6 @@ def prep_batch(dissolCases_directory, start_proj_name):
                    'chmod 775 ' + new_case_dir + '/PararellRun ' + new_case_dir + '/SingleRun ' + new_case_dir + '/Clean']
 
             os.system(''.join(cmd))
-            # hard copy 0 files (will be rewritten by OF simulation)
-            shutil.copytree(start_case_dir + '/Zero', new_case_dir + '/0', dirs_exist_ok=True)
 
             if case == 'etching': # copy files for dynamic mesh
                 cmd = [# remove constant except polyMesh
