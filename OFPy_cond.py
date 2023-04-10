@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import platform
+import json
 from GsPy3DModel import model_3D as m3d
 
 if platform.system() == 'Windows':
@@ -37,14 +38,10 @@ def calc_cond(case_directory):
     hmaj1 = inp["hmaj1"]
     hmin1 = inp["hmin1"]
 
-    lines = []
     # get polyMesh from etching folder.
     os.chdir(case_directory + "/conductivity")
-    last_timestep_dir = str(max([int(a) for a in os.listdir('.') if a.isnumeric()]))
-    lines.append("Max timestep is: " + last_timestep_dir + ". Extract p and U from this dir.\n")
 
     df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    # df_U = read_field.read_OF_U(last_timestep_dir + "/U", nrows=nx * ny * nz)
 
     q = read_out(case_directory + '/conductivity/q.out')
     pout = read_out(case_directory + '/conductivity/pout.out')
@@ -57,46 +54,37 @@ def calc_cond(case_directory):
 
     # reshape p and U data into mesh shape
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-
-    # p = np.transpose(df_p.to_numpy().reshape(nz, ny, nx), (2, 1, 0))
-    # U = np.transpose(df_U['x'].to_numpy().reshape(nz, ny, nx), (2, 1, 0))
-    # plt.pcolor(p[0, :, :])
-    # plt.xlabel('X [in]')
-    # plt.ylabel('Y [in]')
-    # plt.colorbar()
-    # plt.show()
-    # a = U[0, :, :]
     # get inlet surface area
     wids = zs[0, :, -1] - zs[0, :, 0]  # get width at inlet
     inlet_area = np.sum(wids) * dy
 
-    # get q. I can use a single value of U cause it will be the same everywhere due to BC.
     avg_w = np.mean(wids)
     max_w = np.max(wids)
-    lines.append('average width is {0:.5f} inch\n'.format(avg_w / 0.0254))
-    lines.append(
-        'conductivity from cubic law is {0:.5e} md-ft\n'.format(avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084))
-    lines.append('conductivity from cubic law with max width is {0:.5e} md-ft\n'.format(
-        max_w * max_w * max_w / 12 * 1.0133e15 * 3.28084))
-    lines.append('q_in = {0:.5f} m/s\n'.format(np.average(q / inlet_area)))
-    # q = np.average(U[0, :, :]) * inlet_area
 
     dens = 1.e3  # [kg/m3]
     # in OF, p is in [m2/s2]. It's devided by density!!
     dp *= dens  # TODO: need to consider further since each surf area of mesh is different.
-    # dp_max = (np.max(p[0, :, :]) - np.min(p[-1, :, :])) * dens
 
     # compute conductivity
     mu = 0.001
     cond = q[0] * mu * lx / dp / ly  # [m3]
 
     # if cond file not exist, make it
-    # write info = cond, etched width
-    lines.append("conductivity: " + str(cond * 1.01325e15 * 3.28084) + " md-ft\n")
-    lines.append("q: " + str(q[0] * 60000) + " L/min\n")
-    lines.append("pressure diff: " + str(dp / 6895) + " psi\n")
-    lines.append("inlet area: " + str(inlet_area) + " m2\nu_for_cond = " + str(q[0] / inlet_area) + "m/s")
-    open(case_directory + '/cond', "w").writelines(lines)
+    details = {
+        'lambda_x__in': hmaj1,
+        'lambda_z__in': hmin1,
+        'stdev': stdev,
+        'avg_w__in': avg_w / 0.0254,
+        'cond_cubic_avg__mdft': avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084, # conductivity from cubic law with max width
+        'cond_cubic_max__mdft': max_w * max_w * max_w / 12 * 1.0133e15 * 3.28084,
+        'cond__mdft': cond * 1.01325e15 * 3.28084,
+        'U_in__m_s': np.average(q / inlet_area),
+        'q_in__L_min': q[0] * 60000,
+        'dp__psi': dp / 6895,
+        'inlet_area_m2': inlet_area,
+        }
+
+    open(case_directory + '/cond.json', 'w').write(json.dumps(details))
     return 0
 
 
@@ -111,6 +99,6 @@ def read_out(fpath):
             return val
 
 if __name__ == "__main__":
-    case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/no_roughness/no_roughness/'
+    case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7500-stdev0_025/lambda1_0-0_5-stdev0_025/'
     # case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10/'
     calc_cond(case_directory)
