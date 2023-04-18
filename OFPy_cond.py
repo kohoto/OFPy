@@ -55,8 +55,8 @@ def calc_cond(case_directory):
     # reshape p and U data into mesh shape
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
     # get inlet surface area
-    wids = zs[0, :, -1] - zs[0, :, 0]  # get width at inlet
-    inlet_area = np.sum(wids) * dy
+    wids = zs[:, :, -1] - zs[:, :, 0]  # get width at inlet
+    inlet_area = np.sum(wids[0, :]) * dy
 
     avg_w = np.mean(wids)
     max_w = np.max(wids)
@@ -84,7 +84,7 @@ def calc_cond(case_directory):
         'inlet_area_m2': inlet_area,
         }
 
-    open(case_directory + '/cond.json', 'w').write(json.dumps(details))
+    open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
     return 0
 
 
@@ -99,6 +99,6 @@ def read_out(fpath):
             return val
 
 if __name__ == "__main__":
-    case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7500-stdev0_025/lambda1_0-0_5-stdev0_025/'
+    case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_15\lambda1_0-0_5-stdev0_15/'
     # case_directory = '/home/tohoko/OpenFOAM/dissolFoam-v1912/dissolCases/dissolFrac_testRoughSurfGen10/'
     calc_cond(case_directory)

@@ -72,7 +72,7 @@ def deform_blockMesh(inp, df_points, roughness=None):  # this
             'cond_cubic_avg__mdft': avg_w * avg_w * avg_w / 12 * 1.0133e15 * 3.28084
         }
 
-        open('../etched_width.json', 'w').write(json.dumps(details))
+        open('../etched_width.json', 'w').write(json.dumps(details, indent=4))
         # plt.pcolormesh(x_coords / 0.0254, y_coords / 0.0254, wids.T / 0.0254)
         # plt.xlabel('X [in]')
         # plt.ylabel('Y [in]')
