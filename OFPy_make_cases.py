@@ -1,13 +1,13 @@
 import os
 import shutil
-
+import decimal
 import numpy as np
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
-
-# this is to use from windows pc.
-
-dissolCases_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7500-stdev0_15/'
+import matplotlib.pyplot as plt
+plt.style.use("my_style")
+# this is to use from Windows pc.
+dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed7500-stdev0_025/'
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
 
     seed = 7500
     # stdevs = np.array([0.0125, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15])
-    stdevs = np.array([0.15])
+    stdevs = np.array([0.025])
     lambda_xs = np.round(np.arange(1.0, 6.1, 1.0), 3)
     lambda_ys = np.round(np.arange(0.5, 1.51, 0.5), 3)
     lambda_xs, lambda_ys, stdevs = np.meshgrid(lambda_xs, lambda_ys, stdevs)
@@ -57,8 +57,10 @@ def make_roughness(case_name):
     width = gsp.GSLIB_sgsim_2d_uncond(1, nx, ny, cell_size, seed + 3, var, 'roughness')
     shutil.copyfile('GsPy3DModel/sgsim.par', case_name + '/sgsim.par')
     shutil.copyfile('GsPy3DModel/roughness', case_name + '/roughness')
-    # gsp.affine(width, mean, stdev)  #TODO: how does stdev work? I don't need this, since it's dealt later.
-
+    width = gsp.affine(width, mean, stdev)  #TODO: how does stdev work? I don't need this, since it's dealt later.
+    decimal.getcontext().prec = 1
+    gsp.pixelplt(width, 0, Lx + cell_size, 0, Ly + cell_size, cell_size, -0.5, 0.5,
+                 '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
 
 if __name__ == "__main__":
     main()
