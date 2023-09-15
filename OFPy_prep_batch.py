@@ -9,6 +9,16 @@ start_proj_name = '/scratch/user/tohoko.tj/dissolCases/start_proj'
 
 
 def prep_batch(dissolCases_directory, start_proj_name):
+    """
+    Use after OFPy_make_case.py.
+    Create 'etching' and 'conductivity' directories.
+    Copy OF input files from start_proj to each project directory in dissolCases_directory.
+
+    :param dissolCases_directory: path to the directory you desire to copy OF input files from.
+    :param start_proj_name: path to the template project directory.
+    :return: a set of the OF projects ready to run.
+    """
+
     cases = ['etching', 'conductivity']
     # get polyMesh from etching folder.
     os.chdir(dissolCases_directory)

@@ -13,11 +13,24 @@ else:
     from . import deform_blockMesh
 
 def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
+    """
+    Implements the roughness data to blockMesh and save the new blockMesh file to '0' directory.
+    Originally, blockMesh command in OF crates a box mesh without roughenss on the surface.
+    Preprocess for etching simulation, add deform the frac surface using 'roguhenss' output file.
+    Preprocess for conductivity simulation, we deform the frac surface points from the fracture closure calculation.
+
+    :param case_directory:
+    :type  case_directory: str
+    :param close:
+    :type  close: bool
+    :return:
+    """
+
     initial_dir = os.getcwd()
     if close:
-        print('Preparing mesh for ' + case_directory + '/closure')
+        print('Preparing mesh for ' + case_directory + 'closure')
     else:
-        print('Preparing mesh for ' + case_directory + '/etching')
+        print('Preparing mesh for ' + case_directory + 'etching')
 
     # close = True
     # read nx, ny, size from the input file
@@ -36,7 +49,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
            "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
            "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12]}
 
-    """ calc some parameters from inputs """
+    # calc some parameters from data in inp
     # number of grids
     lx = inp["lx"]
     ly = inp["ly"]
@@ -113,6 +126,8 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     end = time.time()
 
     print("elapsed time: " + str(end - start) + " s")
+
+    #TODO: check mesh. If I'm not running it here, then where I run checkMesh?
 
     # for Lenovo linux
     # if close:

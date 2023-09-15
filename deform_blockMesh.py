@@ -9,8 +9,18 @@ else:
     from . import read_field
 
 def deform_blockMesh(inp, df_points, roughness=None):  # this
+    """
+    This function change the geometry of a blockMesh.
+    :param inp: inp file path
+    :type inp: str
+    :param df_points: original distribution of points (etching: flat surface, conductivity: roughness after etching)
+    :type df_points: pd.DataFrame
+    :param roughness: [optional] sparate 'roughness' input file
+    :type roughness: str (file name only, mostly its name is 'roughness')
+    :return: new distribution of points which will be wrtiten in 'points'.
+    """
     if roughness is None:
-        close = True
+       close = True
     else:
         close = False
         roughness *= 0.0254
