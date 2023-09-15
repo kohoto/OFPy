@@ -5,18 +5,28 @@ import numpy as np
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
 import matplotlib.pyplot as plt
-plt.style.use("my_style")
-# this is to use from Windows pc.
-dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed7500-stdev0_025/'
+plt.style.use("tamu_style")
+# STEP 1
+# this is to use from Windows pc. (Linux doens't have plot support)
 
 
 def main():
+    """
+    Create a set of random width distributions for various correlation length.
+    Variance will be the same for all.
+    :return: 'roughness' output file
+    """
     Lx = 7.0; Ly = 1.7; Lz = 0.1; cellsize = 0.025; nz = 10
+    seed = 3000
+    # use a single standard deviation (but make it into an array just for np.meshgrid)
+    stdevs = np.array([0.05])
+    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + str(seed) + '-stdev' + str(stdevs[0]).replace('.', '_') + '/'
 
-    seed = 7500
-    # stdevs = np.array([0.0125, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15])
-    stdevs = np.array([0.025])
-    lambda_xs = np.round(np.arange(1.0, 6.1, 1.0), 3)
+    if not os.path.exists(dissolCases_directory):
+        os.mkdir(dissolCases_directory)
+
+    # 21 combinations of lambda_x, lambda_y
+    lambda_xs = np.round(np.arange(1.0, 7.1, 1.0), 3)
     lambda_ys = np.round(np.arange(0.5, 1.51, 0.5), 3)
     lambda_xs, lambda_ys, stdevs = np.meshgrid(lambda_xs, lambda_ys, stdevs)
 
@@ -44,6 +54,11 @@ def main():
 
 
 def make_roughness(case_name):
+    """
+    Generate roughness data using GSLIB and input data from 'inp'
+    :param case_name: a single case name
+    :return: 'roughness' output file
+    """
     input_file_path = '/inp'
 
     [image_type, file_type, dpi, Lx, Ly, Lz, cell_size, nz, height, mean, stdev, hmaj1, hmin1, seed, n_cut, ridge, ridge_height, ridge_margin] = m3d.read_input(case_name + input_file_path)
@@ -54,13 +69,35 @@ def make_roughness(case_name):
 
     # Make a truth model / unconditional simulation
     var = gsp.make_variogram(nug=0.0, nst=1, it1=1, cc1=1.0, azi1=90.0, hmaj1=hmaj1, hmin1=hmin1)
+    # write a width distribution on 'roughness' file
     width = gsp.GSLIB_sgsim_2d_uncond(1, nx, ny, cell_size, seed + 3, var, 'roughness')
+
+    # copy input files in the project directory for reference
     shutil.copyfile('GsPy3DModel/sgsim.par', case_name + '/sgsim.par')
     shutil.copyfile('GsPy3DModel/roughness', case_name + '/roughness')
+
+    # since we have output file ('roughness'), the output array is used just for plotting.
     width = gsp.affine(width, mean, stdev)  #TODO: how does stdev work? I don't need this, since it's dealt later.
     decimal.getcontext().prec = 1
     gsp.pixelplt(width, 0, Lx + cell_size, 0, Ly + cell_size, cell_size, -0.5, 0.5,
                  '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
+
+    # show historam of prior distribution
+    fig, axs = plt.subplots(figsize=(7.5,5))
+    count, bins, ignored = axs.hist(width.flatten(), 30)
+    a = np.sqrt(np.sum(width * width) / len(width.flatten()))
+    axs.axvline(a, color=(240.0/256, 130.0/256, 33.0/256), linewidth=1.5)
+    axs.axvline(-a, color=(240.0 / 256, 130.0 / 256, 33.0 / 256), linewidth=1.5)
+    axs.axvline(0, color='k', linewidth=1.5)
+    axs.set_ylim([0, 2500])
+    axs.set_xlim([-0.3, 0.3])
+    for tick in axs.get_xticklabels():
+        tick.set_fontname("Segoe UI")
+    for tick in axs.get_yticklabels():
+        tick.set_fontname("Segoe UI")
+    fig.tight_layout()
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
