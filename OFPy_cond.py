@@ -22,7 +22,7 @@ def calc_cond(case_directory):
     inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6],
            "nx": int(inp_tuple[3] / inp_tuple[6]),
            "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
-           "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12]}
+           "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12], "seed": inp_tuple[13]}
 
     """ calc some parameters from inputs """
     # number of grids
@@ -37,6 +37,7 @@ def calc_cond(case_directory):
     stdev = inp["stdev"]
     hmaj1 = inp["hmaj1"]
     hmin1 = inp["hmin1"]
+    seed = inp["seed"]
 
     # get polyMesh from etching folder.
     os.chdir(case_directory + "/conductivity")
@@ -69,8 +70,19 @@ def calc_cond(case_directory):
     mu = 0.001
     cond = q[0] * mu * lx / dp / ly  # [m3]
 
+    # Read the text file
+    with open('roughness', 'r') as file:
+        lines = file.readlines()
+
+    # Extract the headers and data
+    roughness_header = [line.strip() for line in lines[1]]
+    roughness = [line.strip() for line in lines[3:]]
+
+    # Create a list of dictionaries where each dictionary represents a row
+
     # if cond file not exist, make it
     details = {
+        'seed': seed,
         'lambda_x__in': hmaj1,
         'lambda_z__in': hmin1,
         'stdev': stdev,
@@ -82,6 +94,8 @@ def calc_cond(case_directory):
         'q_in__L_min': q[0] * 60000,
         'dp__psi': dp / 6895,
         'inlet_area_m2': inlet_area,
+        'roughness_header': roughness_header,
+        'roughness': roughness
         }
 
     open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
