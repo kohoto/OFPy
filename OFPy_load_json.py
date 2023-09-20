@@ -20,6 +20,9 @@ def update_all_json_in_dissolCases(root_directory):  # For Linux and Windows
     # get parameters from json file in all project directories in dissolCases_directory
     apply_func_to_all_projects_in_dissolCases(root_directory, update_json)
 
+def concatenate_all_json_in_dissolCases(root_directory):
+    par = apply_func_to_all_projects_in_dissolCases(root_directory, concatenate_json)
+    open(root_directory + '/combined.json', 'w').write(json.dumps(par, indent=4))
 
 def plot_trend(root_directory):  # For Linux and Windows
     # get parameters from json file in all project directories in dissolCases_directory
@@ -68,7 +71,7 @@ def apply_func_to_all_projects_in_dissolCases(root_directory, func):
                             os.path.isdir(dissolCases_directory + '/' + name)]
         print(str(len(case_directories)) + ' cases detected.')
 
-        # lambdas changed for each case directory
+        # lambdas changed for each case directorout = {dict: 21} {'lambda1_0-0_5-stdev0_025': {'lambda_x__in': 1.0, 'lambda_z__in': 0.5, 'stdev': 0.025, 'avg_w__in': 0.004957572673928679, 'cond_cubic_avg__mdft': 553.1593602340021, 'cond_cubic_max__mdft': 2309.78856759821, 'cond__mdft': 391.2439876930291, 'U_in__m_s': 1.... Viewy
         for case_directory in case_directories:
             out = func(dissolCases_directory, case_directory, out)
 
@@ -79,7 +82,11 @@ def apply_func_to_all_projects_in_dissolCases(root_directory, func):
 
 def load_json_cond(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
     """
-
+    Concatenate all json files in
+    :param dissolCases_directory: path of the dissolCases directory
+    :param case_directory: name of the case directory
+    :param combined_pars: list of dictionaries that contain parameters for each case
+    :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
     """
     filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
     with open(filepath, 'r') as f:
@@ -100,31 +107,35 @@ def update_json(dissolCases_directory, case_directory, par):  # For Linux and Wi
     :return:
     """
     filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
-    with open(filepath, 'r+') as f:
-        json_data = json.load(f)
+    json_data = json.load(open(filepath, 'r'))
 
-        if "seed" not in json_data:
-            # read seed from inp
-            input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
-            inp_tuple = m3d.read_input(input_file_path)
-            seed = inp_tuple[13]
+    if "seed" not in json_data:
+        # read seed from inp
+        input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
+        inp_tuple = m3d.read_input(input_file_path)
+        seed = inp_tuple[13]
 
-            # read roughness data from roughness
-            roughness_path = dissolCases_directory + '/' + case_directory + '/roughness'
-            with open(roughness_path, 'r') as file:
-                lines = file.readlines()
-            # Extract the headers and data
-            roughness_header = lines[1]
-            roughness = np.array([line.strip() for line in lines[3:]])
+        json_data["seed"] = seed
 
-            json_data["seed"] = seed
-            json_data["roughness_header"] = roughness_header  # add the value to the existing json
-            json_data["roughness"] = roughness
+    # Open the JSON file for writing (this will overwrite the existing file)
 
-
-            f.write(json.dumps(json_data, indent=4))
+    open(filepath, 'w').write(json.dumps(json_data, indent=4))
 
     return {}  # return empty dict for consistency
+
+
+def concatenate_json(dissolCases_directory, case_directory, combined_pars):  # For Linux and Windows (no OF command)
+    """
+    Concatenate all json files in
+    :param dissolCases_directory: path of the dissolCases directory
+    :param case_directory: name of the case directory
+    :param combined_pars: list of dictionaries that contain parameters for each case
+    :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
+    """
+    filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
+    with open(filepath, 'r') as f:
+        combined_pars[case_directory] = json.load(f)
+    return combined_pars
 
 
 def save_plot(root_directory, ax, key_x, key_y, key_c, im):
@@ -145,5 +156,6 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 if __name__ == "__main__":
     # dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
     root_dir = 'C:/Users/tohoko.tj/dissolCases/'
-    update_all_json_in_dissolCases(root_dir)
-    #plot_trend(root_dir)
+    # update_all_json_in_dissolCases(root_dir)
+    concatenate_all_json_in_dissolCases(root_dir)
+    # plot_trend(root_dir)
