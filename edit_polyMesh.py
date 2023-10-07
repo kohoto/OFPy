@@ -1,13 +1,15 @@
 import numpy as np
 import pandas as pd
 
+
 def read_OF_boundary(fpath, nrows):
     return 0
 
+
 def read_OF_points(fpath, nrows):
-    df = pd.read_csv(fpath, skiprows=20, sep=" ", header=None, names=["x", "y", "z"])
+    df = pd.read_csv(fpath, nrows=nrows, skiprows=20, sep=" ", header=None, names=["x", "y", "z"], on_bad_lines='skip')
     # df.drop(df.tail(2).index, inplace=True)  # drop last 2 rows
-    df = df[:-2]  # somehow nrows and skipfooter didn't work well
+    # df = df[:-2]  # somehow nrows and skipfooter didn't work well
     df["x"] = df["x"].astype(str).str.replace("(", '').astype(float)
     df["y"] = df["y"].astype(float)
     df["z"] = df["z"].astype(str).str.replace(")", '').astype(float)
@@ -51,28 +53,30 @@ def get_OF_headers(object, ndata, note=""):
         cls = 'labelList'
     elif object == "etched_wids":
         cls = 'volScalarField'
+    elif object == "mineralogy":
+        cls = 'dictionary'
     else:
         print('no write function for this object [edit_polyMesh/get_OF_headers]')
 
     h0 = ["/*--------------------------------*- C++ -*----------------------------------*\n",
-               "| =========                 |                                                 |\n",
-               "| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |\n",
-               "|  \\    /   O peration     | Version:  v1912                                 |\n",
-               "|   \\  /    A nd           | Website:  www.openfoam.com                      |\n",
-               "|    \\/     M anipulation  |                                                 |\n",
-               "\*---------------------------------------------------------------------------*/\n",
-               "FoamFile\n",
-               "{\n",
-               "    version     2.0;\n",
-               "    format      ascii;\n",
-               "    class       {};\n".format(cls)]
+          "| =========                 |                                                 |\n",
+          "| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |\n",
+          "|  \\    /   O peration     | Version:  v1912                                 |\n",
+          "|   \\  /    A nd           | Website:  www.openfoam.com                      |\n",
+          "|    \\/     M anipulation  |                                                 |\n",
+          "\*---------------------------------------------------------------------------*/\n",
+          "FoamFile\n",
+          "{\n",
+          "    version     2.0;\n",
+          "    format      ascii;\n",
+          "    class       {};\n".format(cls)]
     h1 = ['    note        "{}";\n'.format(note)]
     h2 = ['    location    "constant/polyMesh";\n',
-               "    object      {};\n".format(object),
-               "}\n",
-               "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\n",
-               "{}\n".format(str(ndata)),
-               "(\n"]
+          "    object      {};\n".format(object),
+          "}\n",
+          "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\n",
+          "{}\n".format(str(ndata)),
+          "(\n"]
 
     if note != "":
         headers = h0 + h1 + h2
@@ -81,26 +85,28 @@ def get_OF_headers(object, ndata, note=""):
 
     return headers
 
+
 def get_OF_patches(patch_name, n_faces, start_face):
     patch = ["    {}\n".format(patch_name),
-            "    {\n",
-            "        type            patch;\n",
-            "        nFaces          {};\n".format(n_faces),
-            "        startFace       {};\n".format(start_face),
-            "    }\n"]
+             "    {\n",
+             "        type            patch;\n",
+             "        nFaces          {};\n".format(n_faces),
+             "        startFace       {};\n".format(start_face),
+             "    }\n"]
 
     return patch
 
+
 def get_OF_footers():
     return [")\n\n",
-           "// ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** * //"]
+            "// ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** * //"]
 
 
-def write_OF_polyMesh(object, ndata, df, note="", delete_idx = []):
+def write_OF_polyMesh(object, ndata, df, note="", delete_idx=[]):
     with open("constant/polyMesh/" + object, "w+") as f:
         f.writelines(get_OF_headers(object, ndata, note))
 
-        if object == "boundary": # polyBoundaryMesh
+        if object == "boundary":  # polyBoundaryMesh
             for patch, nfaces, start_face in zip(df['patch'], df['nfaces'], df['start_face']):
                 f.writelines(get_OF_patches(patch, nfaces, start_face))
 
@@ -109,7 +115,8 @@ def write_OF_polyMesh(object, ndata, df, note="", delete_idx = []):
         #
         elif object == "points":
             line = '({row0:.9f} {row1:.9f} {row2:.9f})\n'
-            f.write(''.join(line.format(row0=row[0], row1=row[1], row2=row[2]) for idx, row in df.sort_index().iterrows()))
+            f.write(
+                ''.join(line.format(row0=row[0], row1=row[1], row2=row[2]) for idx, row in df.sort_index().iterrows()))
 
         elif object == "faces":
             for idx, row in df.sort_index().iterrows():
@@ -151,10 +158,9 @@ if __name__ == '__main__':
 
     face_to_be_deleted = get_duplicated_points()
 
-
     # example to write boundary
     start_patch_face = (nx - 1) * ny * nz + (ny - 1) * nz * nx + (
-                nz - 1) * nx * ny  # before this, all are internal faces
+            nz - 1) * nx * ny  # before this, all are internal faces
     # calc the number of internal faces to be deleted
     len_delete_from_internal = len([i for i in face_to_be_deleted if (i < start_patch_face)])
 
@@ -171,11 +177,10 @@ if __name__ == '__main__':
         nfaces.append(old_nfaces - len_delete)
 
     df_patch = pd.DataFrame(data={'patch': ['solubleWall', 'solubleWall_mirrored', 'inlet', 'outlet', 'insolubleY'],
-                            'nfaces': nfaces,
-                            'start_face': start_faces})
+                                  'nfaces': nfaces,
+                                  'start_face': start_faces})
     headers = get_OF_headers('polyBoundaryMesh', 'boundary', 5)
     write_OF_polyMesh('boundary', len(df_patch), df_patch)
-
 
     # example to write faces
     n_faces = len(df_faces.index) - df_faces['p3'].isna().sum()
@@ -187,7 +192,7 @@ if __name__ == '__main__':
     nCells = nx * ny * nz
     note = "nPoints:" + str(len(df_points.index)) + "  nCells:" + str(nCells) + "  nFaces:" + str(
         n_faces) + "  nInternalFaces:" + str(nInternalFaces)
-    write_OF_polyMesh('owner', n_faces, df_owner, note=note, delete_idx = face_to_be_deleted)
+    write_OF_polyMesh('owner', n_faces, df_owner, note=note, delete_idx=face_to_be_deleted)
 
     # example of write neighbour
     # since some faces doesn't have a neighbour, the length is not just a subtruction fo face_to_be_deleted.
@@ -196,14 +201,12 @@ if __name__ == '__main__':
     nCells = nx * ny * nz
     note = "nPoints:" + str(len(df_points.index)) + "  nCells:" + str(nCells) + "  nFaces:" + str(
         n_faces) + "  nInternalFaces:" + str(nInternalFaces)
-    write_OF_polyMesh('owner', n_faces, df_neighbour, note=note, delete_idx = face_to_be_deleted)
-
+    write_OF_polyMesh('owner', n_faces, df_neighbour, note=note, delete_idx=face_to_be_deleted)
 
     # write surface output file for stl generation
     stl_headers = ["Name: closed fracture\n",
-                "Experiment number: 1\n",
-                "Sample Lenght: 7.000000\n",
-                "Sample Width: 1.700000\n",
-                "Measurement Interval: 0.025000\n\n\n\n",
-                "X Position	Y Position	Z Displacement"]
-
+                   "Experiment number: 1\n",
+                   "Sample Lenght: 7.000000\n",
+                   "Sample Width: 1.700000\n",
+                   "Measurement Interval: 0.025000\n\n\n\n",
+                   "X Position	Y Position	Z Displacement"]

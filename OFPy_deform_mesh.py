@@ -36,13 +36,6 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     # read nx, ny, size from the input file
     input_file_path = 'inp'
 
-    # sp3 = subprocess.Popen("module load GCC/8.3.0 OpenMPI/3.1.4; module load OpenFOAM/v1912; source ${FOAM_BASH};"
-    #                        ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
-    #                        , shell=True, executable='/bin/bash')
-    # sp3.communicate()
-    # sp3.wait()
-
-
     inp_tuple = m3d.read_input(case_directory + input_file_path)
     # [image_type, file_type, dpi, Lx, Ly, Lz, cell_size, nz, height, mean, stdev, hmaj1, hmin1, seed, n_cut, ridge, ridge_height, ridge_margin] =
     inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6], "nx": int(inp_tuple[3] / inp_tuple[6]),
