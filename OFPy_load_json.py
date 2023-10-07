@@ -24,6 +24,10 @@ def concatenate_all_json_in_dissolCases(root_directory):
     par = apply_func_to_all_projects_in_dissolCases(root_directory, concatenate_json)
     open(root_directory + '/combined.json', 'w').write(json.dumps(par, indent=4))
 
+
+def replace_all_json_in_dissolCases(root_directory):
+    apply_func_to_all_projects_in_dissolCases(root_directory, replace_infinity_json)
+
 def plot_trend(root_directory):  # For Linux and Windows
     # get parameters from json file in all project directories in dissolCases_directory
     par = apply_func_to_all_projects_in_dissolCases(root_directory, load_json_cond)
@@ -33,9 +37,9 @@ def plot_trend(root_directory):  # For Linux and Windows
     # choose the formatting rules for the plots
     # key_x = 'avg_w__in'; key_y = 'cond__mdft'; key_c = 'lambda_x__in'; key_m = 'stdev'
     # key_x = 'stdev'; key_y = 'avg_w__in'; key_c = 'lambda_x__in'; key_m = 'lambda_x__in'
-    key_x = 'lambda_x__in';
-    key_y = 'avg_w__in';
-    key_c = 'stdev';
+    key_x = 'avg_w__in';
+    key_y = 'cond__mdft';
+    key_c = 'seed';
     key_m = 'stdev'
 
     iter = 0
@@ -89,14 +93,17 @@ def load_json_cond(dissolCases_directory, case_directory, par):  # For Linux and
     :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
     """
     filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
-    with open(filepath, 'r') as f:
-        json_data = json.load(f)
-        # loop through each key-value pair in the json data
-        for key, value in json_data.items():
-            if key in par:
-                par[key].append(value)  # add the value to the existing list
-            else:
-                par[key] = [value]  # create a new list for the key
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            json_data = json.load(f)
+            # loop through each key-value pair in the json data
+            for key, value in json_data.items():
+                if key in par:
+                    par[key].append(value)  # add the value to the existing list
+                else:
+                    par[key] = [value]  # create a new list for the key
+    else:
+        print('ignored: ' + filepath)
 
     return par
 
@@ -107,19 +114,22 @@ def update_json(dissolCases_directory, case_directory, par):  # For Linux and Wi
     :return:
     """
     filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
-    json_data = json.load(open(filepath, 'r'))
+    if os.path.isfile(filepath):
+        json_data = json.load(open(filepath, 'r'))
 
-    if "seed" not in json_data:
-        # read seed from inp
-        input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
-        inp_tuple = m3d.read_input(input_file_path)
-        seed = inp_tuple[13]
+        if "seed" not in json_data:
+            # read seed from inp
+            input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
+            inp_tuple = m3d.read_input(input_file_path)
+            seed = inp_tuple[13]
 
-        json_data["seed"] = seed
+            json_data["seed"] = seed
 
-    # Open the JSON file for writing (this will overwrite the existing file)
+        # Open the JSON file for writing (this will overwrite the existing file)
 
-    open(filepath, 'w').write(json.dumps(json_data, indent=4))
+        open(filepath, 'w').write(json.dumps(json_data, indent=4))
+    else:
+        print('ignored: ' + filepath)
 
     return {}  # return empty dict for consistency
 
@@ -132,17 +142,53 @@ def concatenate_json(dissolCases_directory, case_directory, combined_pars):  # F
     :param combined_pars: list of dictionaries that contain parameters for each case
     :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
     """
-    filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
-    with open(filepath, 'r') as f:
-        combined_pars[case_directory] = json.load(f)
+    dirpath = dissolCases_directory + '/' + case_directory
+    filepath = dirpath + '/cond.json'
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            combined_pars[dirpath] = json.load(f)
+    else:
+        print('ignored: ' + filepath)
+
     return combined_pars
 
+def replace_infinity_json(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
+    """
+    Replace infinity to numbers in all json files so that Excel can read it
+    :param dissolCases_directory: path of the dissolCases directory
+    :param case_directory: name of the case directory
+    :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
+    """
+    dirpath = dissolCases_directory + '/' + case_directory
+    filepath = dirpath + '/cond.json'
+
+    if os.path.isfile(filepath):
+        json_data = json.load(open(filepath, 'r'))
+        json_data = replace_infinity(json_data)
+        open(filepath, 'w').write(json.dumps(json_data, indent=4))
+    else:
+        print('ignored: ' + filepath)
+
+    return {}
+
+def replace_infinity(obj):
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            obj[key] = replace_infinity(value)
+    elif isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = replace_infinity(obj[i])
+    elif isinstance(obj, str):
+        if obj == 'Infinity':
+            return 10000000000
+
+    return obj
 
 def save_plot(root_directory, ax, key_x, key_y, key_c, im):
     cbar = plt.colorbar(im)
     cbar.set_label(key_c, rotation=270)
-    # ax.set_xlim([0.001, 0.1])
-    # ax.set_ylim([1, 1e6])
+    ax.set_xlim([0.001, 0.1])
+    ax.set_ylim([10, 1e4])
     ax.set_xlabel(key_x)
     ax.set_ylabel(key_y)
     ax.set_xscale('log')
@@ -156,6 +202,7 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 if __name__ == "__main__":
     # dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
     root_dir = 'C:/Users/tohoko.tj/dissolCases/'
-    # update_all_json_in_dissolCases(root_dir)
+    update_all_json_in_dissolCases(root_dir)
+    replace_all_json_in_dissolCases(root_dir)
     concatenate_all_json_in_dissolCases(root_dir)
-    # plot_trend(root_dir)
+    plot_trend(root_dir)
