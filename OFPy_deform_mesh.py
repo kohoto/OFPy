@@ -62,7 +62,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
         print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
 
         # copy mesh from etching project dir to conductivity project dir
-        pcs = [pc * 1000 for pc in list(range(1, 4))]
+        pcs = [pc * 1000 for pc in list(range(1, 5))]
         for pc in pcs:
             os.chdir(case_directory + "/conductivity" + str(pc))
             os.system(
