@@ -37,7 +37,7 @@ def close(inp, df_points):
 
     # assume disp
     youngs_modulus = 1e6  # psi
-    load = 96 * 1000  # N
+    load = 48 * pc  # N
     min_disp = np.min(wids)  # in inch
     max_disp = np.max(wids)
 

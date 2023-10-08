@@ -107,7 +107,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     if close:
         for pc in pcs:
             os.chdir(case_directory + "/conductivity" + str(pc))
-            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points)
+            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), df_points_deformed)  # write new mesh in constant/polyMesh/
 
     else:

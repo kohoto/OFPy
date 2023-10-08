@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ if platform.system() == 'Windows':
 else:
     from . import read_field
 
-def deform_blockMesh(inp, df_points, roughness=None):  # this
+def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     """
     This function change the geometry of a blockMesh.
     :param inp: inp file path
@@ -51,15 +52,22 @@ def deform_blockMesh(inp, df_points, roughness=None):  # this
         np.savetxt("etched_wids.csv", e_s / 0.0254, delimiter=",")
         etched_wids = e_s.reshape(-1)
 
-        read_field.write_OF_field('etched_wids', len(pd.DataFrame(data=etched_wids)), pd.DataFrame(data=etched_wids), './')
-        # 0.99 is not to completely close the touching points
-        min_width = 0.99 * np.min(abs(wids), axis=1)  # search min openings along y axis at each x-coord
-        wids -= np.tile(min_width, (ny+1, 1)).T # almost all time the min_width is at the edge.
+        youngs_modulus = 1e6  # psi
+        load = 48 * pc  # N
+        min_disp = np.min(wids)  # in inch
+        max_disp = np.max(wids)
 
+        sol = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
+                                          bounds=(min_disp, max_disp), method='bounded')
+        min_width = 0.99 * min_disp
+        wids -= min_width
+
+        wids = (wids - sol.x) * ((wids - sol.x) > 0) + min_width * ((wids - sol.x) <= 0)
         np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
     else:  # shift
         zs[:, :, -1] += roughness
 
+    # getting internal points z coordinates
     for i in range(nz+1):
         zs[:, :, i] = zs[:, :, -1] - wids * ratios[i]
 
@@ -97,3 +105,17 @@ def deform_blockMesh(inp, df_points, roughness=None):  # this
 
     coords = np.vstack((xs, ys, zs)).T
     return pd.DataFrame(data=coords, columns=['x', 'y', 'z'])
+
+
+def f(disp, wids, max_disp, youngs_modulus, dx, dy, load):
+    disp_at_pts = abs(wids - disp) * ((wids - disp) <= 0)
+
+    # from the displacement and Young's modulus, get the pressure at the point
+    stress = (disp_at_pts / max_disp) * youngs_modulus  # 4.0 is rock height for the both sides
+
+    # TODO: get the pressure around the contact point
+    # calculate the force
+    load_calc = np.sum(stress * 6894.76 * dx * dy)
+
+    # if the force is the same as my input, return, if not, change the displacement by * F / calced force
+    return abs((load_calc - load) / load)
