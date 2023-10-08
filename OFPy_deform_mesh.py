@@ -58,13 +58,15 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
     if close:
         # get polyMesh from etching folder.
-        os.chdir(case_directory + "/conductivity")
-        last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+        last_timestep_dir = str(max([int(a) for a in os.listdir(case_directory + '/etching') if a.isnumeric()]))
         print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
 
         # copy mesh from etching project dir to conductivity project dir
-        os.system(
-            "mkdir constant/polyMesh; cp -r ../etching/constant/polyMesh constant; cp ../etching/" + last_timestep_dir + "/polyMesh/points constant/polyMesh/points")
+        pcs = [pc * 1000 for pc in list(range(1, 4))]
+        for pc in pcs:
+            os.chdir(case_directory + "/conductivity" + str(pc))
+            os.system(
+                "mkdir constant/polyMesh; cp -r ../etching/constant/polyMesh constant; cp ../etching/" + last_timestep_dir + "/polyMesh/points constant/polyMesh/points")
 
     else:
         # run blockMesh and polyMesh
@@ -94,14 +96,6 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
         os.system("rm " + blockMeshDict + "; mv " + blockMeshDict_new + " " + blockMeshDict)
 
-        # generate smooth mesh, topoSet, and initial conditions
-        # sp = subprocess.Popen("source $WM_PROJECT_DIR/etc/bashrc;"
-        #                       ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
-        #                       " runApplication blockMesh;"
-        #                       "runApplication topoSet -constant; cp -rp Zero 0;"
-        #                       , shell=True, executable='/bin/bash')
-        # sp.communicate()
-        # sp.wait()
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
         roughness = gsp.affine(sim_array[0], mean, stdev).T
 
@@ -111,13 +105,16 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     df_points['index_column'] = df_points.index
 
     if close:
-        df_points = deform_blockMesh.deform_blockMesh(inp, df_points)
+        for pc in pcs:
+            os.chdir(case_directory + "/conductivity" + str(pc))
+            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points)
+            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), df_points_deformed)  # write new mesh in constant/polyMesh/
+
     else:
-        df_points = deform_blockMesh.deform_blockMesh(inp, df_points, roughness=roughness)  # roughness file is in [inch]
+        df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, roughness=roughness)  # roughness file is in [inch]
+        edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), df_points_deformed)  # write new mesh in constant/polyMesh/
 
-    edit_polyMesh.write_OF_polyMesh('points', len(df_points), df_points)  # write new mesh in constant/polyMesh/
     end = time.time()
-
     print("elapsed time: " + str(end - start) + " s")
 
     #TODO: check mesh. If I'm not running it here, then where I run checkMesh?
