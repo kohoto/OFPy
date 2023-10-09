@@ -17,7 +17,7 @@ def main():
     :return: 'roughness' output file
     """
     Lx = 7.0; Ly = 1.7; Lz = 0.1; cellsize = 0.025; nz = 10
-    seed = 3000
+    seed = 6000
     # use a single standard deviation (but make it into an array just for np.meshgrid)
     stdevs = np.array([0.05])
     dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + str(seed) + '-stdev' + str(stdevs[0]).replace('.', '_') + '/'
@@ -26,7 +26,7 @@ def main():
         os.mkdir(dissolCases_directory)
 
     # 21 combinations of lambda_x, lambda_y
-    lambda_xs = np.round(np.arange(1.0, 7.1, 1.0), 3)
+    lambda_xs = np.round(np.arange(1.0, 6.1, 1.0), 3)
     lambda_ys = np.round(np.arange(0.5, 1.51, 0.5), 3)
     lambda_xs, lambda_ys, stdevs = np.meshgrid(lambda_xs, lambda_ys, stdevs)
 
@@ -83,7 +83,7 @@ def make_roughness(case_name):
                  '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
 
     # show historam of prior distribution
-    fig, axs = plt.subplots(figsize=(7.5,5))
+    fig, axs = plt.subplots(figsize=(7.5, 5))
     count, bins, ignored = axs.hist(width.flatten(), 30)
     a = np.sqrt(np.sum(width * width) / len(width.flatten()))
     axs.axvline(a, color=(240.0/256, 130.0/256, 33.0/256), linewidth=1.5)
