@@ -34,7 +34,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
     # close = True
     # read nx, ny, size from the input file
-    input_file_path = 'inp'
+    input_file_path = '/inp'
 
     inp_tuple = m3d.read_input(case_directory + input_file_path)
     # [image_type, file_type, dpi, Lx, Ly, Lz, cell_size, nz, height, mean, stdev, hmaj1, hmin1, seed, n_cut, ridge, ridge_height, ridge_margin] =
