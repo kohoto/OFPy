@@ -79,9 +79,8 @@ def calc_cond(case_directory):
     roughness = [line.strip() for line in lines[3:]]
 
     # Create a list of dictionaries where each dictionary represents a row
-
     # if cond file not exist, make it
-    details = {
+    new_pars = {
         'seed': seed,
         'lambda_x__in': hmaj1,
         'lambda_z__in': hmin1,
@@ -97,6 +96,13 @@ def calc_cond(case_directory):
         'roughness_header': roughness_header,
         'roughness': roughness
         }
+
+    filepath = case_directory + '/cond.json'
+    if os.path.isfile(filepath):
+        json_data = json.load(open(filepath, 'r'))
+
+        for key, value in new_pars.items():
+            json_data[key] = value
 
     open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
     return 0

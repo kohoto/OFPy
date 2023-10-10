@@ -2,15 +2,19 @@ import subprocess
 import os
 import time
 import platform
+import numpy as np
+import json
 
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
 if platform.system() == 'Windows':
     import edit_polyMesh
     import deform_blockMesh
+    import get_roughness_parameters
 else:
     from . import edit_polyMesh
     from . import deform_blockMesh
+    from . import get_roughness_parameters
 
 def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     """
@@ -51,6 +55,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     ny = inp["ny"]
     nz = inp["nz"]
     dx = inp["dx"]
+    dy = inp["dy"]
     mean = inp["mean"]
     stdev = inp["stdev"]
     hmaj1 = inp["hmaj1"]
@@ -105,6 +110,18 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     df_points['index_column'] = df_points.index
 
     if close:
+        # compute etched width before closing
+        zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+        wids = zs[:, :, -1] - zs[:, :, 0]
+        etched_wids = wids.reshape(-1) - lz  # lz is the original frac opening
+
+        details = {
+            'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
+        }
+        open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
+
+
+
         for pc in pcs:
             os.chdir(case_directory + "/conductivity" + str(pc))
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
