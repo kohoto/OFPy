@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as pl
+import plotly.graph_objects as go
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
 import edit_polyMesh
@@ -31,19 +31,17 @@ def get_roughness_parameters(inp, zs):
 def generate_variogram(inp, zs):
 
     # read input
-    lx = inp["lx"] * 0.0254
-    ly = inp["ly"] * 0.0254
-    lz = inp["lz"] * 0.0254
+    lx = inp["lx"]
+    ly = inp["ly"]
     nx = inp["nx"]  # nx is number of faces, not points
     ny = inp["ny"]
-    nz = inp["nz"]
 
     dx = lx / nx
     dy = ly / ny
-    dz = lz / nz
 
-    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny+1, 1)).T
+    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny+1, 1)).T  # inch
     ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx+1, 1))
+    zs = zs / 0.0254
 
     # compute mean and stdev
     mean = np.nanmean(zs.reshape(-1))
@@ -59,99 +57,86 @@ def generate_variogram(inp, zs):
     # Plot variogram in horizontal direction
     lag_x, gamma_x, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=nx, lagdist=dx, azi=90, atol=2.0, bstand=1)
 
-    # ax.plot([0, lag_dist * nlag], [1.0, 1.0], color='black')
-    # ax.set_xlabel(r'Lag Distance $\bf(h)$, [in]')
-    # ax.set_ylabel(r'$\gamma \bf(x)$')
-    # ax.set_xlim([0, lag_dist * nlag])
-    # ax.set_ylim([0, 3.0])
-
-    # Calculate sample porosity data isotropic variogram
     # Plot variogram in vertical direction
     lag_y, gamma_y, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=ny, lagdist=dy, azi=0, atol=2.0, bstand=1)
-
-    fig = pl.Figure(data=[pl.Scatter(x=lag_x, y=gamma_x), pl.Scatter(x=lag_y, y=gamma_y)])
+    layout = go.Layout(title="Variogram",
+                       xaxis_title="Lag distance [in]",
+                       yaxis_title="Variogram")
+    fig = go.Figure(data=[go.Scatter(x=lag_x, y=gamma_x, name="x-dir"),
+                          go.Scatter(x=lag_y, y=gamma_y, name="y-dir")],
+                    layout=layout)
+    fig.add_hline(y=1)
     fig.show()
 
     # Ask user to input correlation length from lag distance plot.
+    hmaj1 = input("Enter correlation length in x [in]:")
     hmin1 = input("Enter correlation length in y [in]:")
-    hmaj1 = input("Enter correlation length in x[in]:")
 
     return hmaj1, hmin1, mean, stdev
 
 
-def generate_variogram_lbl(x, y, width):
+def generate_variogram_lbl(inp, zs):
     # generate profilometer variogram line by line
-    nx = x.shape[1]
-    ny = x.shape[0]
-    width = np.nan_to_num(width)
+    # read input
+    lx = inp["lx"]
+    ly = inp["ly"]
+    nx = inp["nx"]  # nx is number of faces, not points
+    ny = inp["ny"]
 
-    # first investigate in x-direction
-    # Calculate sample porosity data isotropic variogram
-    lag_dist = 0.025  # TODO: understand these inputs
-    nlag = nx
-    azi = 90
-    atol = 2.0
-    bstand = 1
-    # plot setting first
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(121)
-    # plot reference line
-    ax.plot([0, lag_dist * nlag], [1.0, 1.0], color='black')
+    dx = lx / nx
+    dy = ly / ny
 
+    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny+1, 1)).T  # inch
+    ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx+1, 1))
+    zs = zs / 0.0254
+
+    # compute mean and stdev
+    mean = np.nanmean(zs.reshape(-1))
+    stdev = np.nanstd(zs.reshape(-1))
+
+    print('mean: ' + str(mean) + '\nstdev: ' + str(stdev))
+
+    # create dataframe since GeostatsPy is based on dataframe
+    zs = np.nan_to_num(zs)
+
+    # Plot variogram in horizontal direction
+    traces = []
     idx_x = 0
-    for (x_line, y_line, width_line) in zip(x, y, width):
+    for (x_line, y_line, width_line) in zip(xs, ys, zs):
         idx_x += 1
         # create dataframe since GeostatsPy is based on dataframe
-        sample_data = pd.DataFrame(np.array([x_line, y_line, width_line]).transpose(), columns=['X', 'Y', 'Z'])
-        # Plot variogram in vertical direction
-        lag, por_gamma, por_npair = gp.gamv_2d(sample_data, "X", "Y", "Z", nlag, lag_dist, azi, atol, bstand)
-        ax.plot(lag, por_gamma, 'o', markersize=2, label='idx_x = ' + str(idx_x))
+        df = pd.DataFrame(np.array([x_line, y_line, width_line]).transpose(), columns=['X', 'Y', 'Z'])
+        lag_x, gamma_x, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=nx, lagdist=dx, azi=90, atol=2.0, bstand=1)
+        traces.append(go.Scatter(x=lag_x, y=gamma_x, name="x-dir" + str(idx_x)))
 
-    # set up the graph
-    ax.set_xlabel(r'Lag Distance $\bf(h)$, [in]')
-    ax.set_ylabel(r'$\gamma \bf(y)$')
-    ax.set_xlim([0, lag_dist * nlag])
-    ax.set_ylim([0, 3.0])
-
-    ## ==== next investigate in y-direction ====
-    # In y-direction it's more tricky because the zigzag feature is in y-direction
-    # Calculate sample porosity data isotropic variogram
-    lag_dist = 0.025  # TODO: understand these inputs
-    nlag = ny
-    azi = 0
-    atol = 2.0
-    bstand = 1
-    # plot setting first
-    ax = fig.add_subplot(122)
-    # plot reference line
-    ax.plot([0, lag_dist * nlag], [1.0, 1.0], color='black')
-
+    # Plot variogram in vertical direction
     idx_y = 0
-    for (x_line, y_line, width_line) in zip(x.transpose(), y.transpose(), width.transpose()):
+    for (x_line, y_line, width_line) in zip(xs.transpose(), ys.transpose(), zs.transpose()):
         idx_y += 1
         for odd_idx in range(2):
             # create dataframe since GeostatsPy is based on dataframe
-
-            sample_data = pd.DataFrame(
+            df = pd.DataFrame(
                 np.array([x_line[odd_idx::2], y_line[odd_idx::2], width_line[odd_idx::2]]).transpose(),
                 columns=['X', 'Y', 'Z'])
             # Plot variogram in vertical direction
-            lag, por_gamma, por_npair = gp.gamv_2d(sample_data, "X", "Y", "Z", nlag, lag_dist, azi, atol, bstand)
-            ax.plot(lag, por_gamma, 'o', markersize=2, label='idx_y = ' + str(idx_y) + '_' + str(odd_idx))
+            lag_y, gamma_y, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=ny, lagdist=dy, azi=0, atol=2.0, bstand=1)
+            traces.append(go.Scatter(x=lag_y, y=gamma_y, name="y-dir" + str(idx_y)))
 
-    ax.set_xlabel(r'Lag Distance $\bf(h)$, [in]')
-    ax.set_ylabel(r'$\gamma \bf(y)$')
-    ax.set_xlim([0, lag_dist * nlag])
-    ax.set_ylim([0, 3.0])
-    plt.show()
+    layout = go.Layout(title="Variogram",
+                       xaxis_title="Lag distance [in]",
+                       yaxis_title="Variogram")
+    fig = go.Figure(data=traces, layout=layout)
+    fig.add_hline(y=1)
+    fig.show()
 
-    # compute mean
-    mean = width.reshape(-1).mean()
-    stdev = width.reshape(-1).std()
-    return mean, stdev
+    # Ask user to input correlation length from lag distance plot.
+    hmaj1 = input("Enter correlation length in x [in]:")
+    hmin1 = input("Enter correlation length in y [in]:")
+
+    return hmaj1, hmin1, mean, stdev
 
 
-def ISO_filter(width):
+def iso_filter(width):
     waviness = np.zeros(width.shape)
     for w, iy in zip(width, range(width.shape[0])):  # loop for each row
         for iter in range(100):
@@ -166,7 +151,7 @@ def ISO_filter(width):
 
 
 def plot_waviness_and_roughness(waviness, roughness, width):
-    fig = plt.figure(figsize=(10, 5))
+    fig = go.Figure()
     y_mid = int(waviness.shape[0] / 2)
     # plot original
     ax = fig.add_subplot(311)
@@ -194,11 +179,7 @@ if __name__ == '__main__':  # testing the function
     # read nx, ny, size from the input file
     input_file_path = '/inp'
 
-    inp_tuple = m3d.read_input(case_directory + input_file_path)
-    inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6],
-           "nx": int(inp_tuple[3] / inp_tuple[6]),
-           "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
-           "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12]}
+    inp = m3d.read_input(case_directory + input_file_path)
 
     # calc some parameters from data in inp
     nx = inp["nx"]

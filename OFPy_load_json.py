@@ -5,6 +5,8 @@ import platform
 import numpy as np
 import pandas as pd
 from GsPy3DModel import model_3D as m3d
+import edit_polyMesh
+import get_roughness_parameters
 
 if platform.system() == 'Windows':
     import plot_default_format
@@ -17,7 +19,7 @@ plot_default_format.plot_format_Tohoko()
 
 
 def update_all_json_in_dissolCases(root_directory):  # For Linux and Windows
-    # get parameters from json file in all project directories in dissolCases_directory
+    # get parameters from json file in all project directories in batch_directory
     apply_func_to_all_projects_in_dissolCases(root_directory, update_json)
 
 def concatenate_all_json_in_dissolCases(root_directory):
@@ -29,7 +31,7 @@ def replace_all_json_in_dissolCases(root_directory):
     apply_func_to_all_projects_in_dissolCases(root_directory, replace_infinity_json)
 
 def plot_trend(root_directory):  # For Linux and Windows
-    # get parameters from json file in all project directories in dissolCases_directory
+    # get parameters from json file in all project directories in batch_directory
     par = apply_func_to_all_projects_in_dissolCases(root_directory, load_json_cond)
 
     # convert to pandas
@@ -116,17 +118,32 @@ def update_json(dissolCases_directory, case_directory, par):  # For Linux and Wi
     filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
     if os.path.isfile(filepath):
         json_data = json.load(open(filepath, 'r'))
+        input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
+        inp = m3d.read_input(input_file_path)
 
         if "seed" not in json_data:
             # read seed from inp
-            input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
-            inp_tuple = m3d.read_input(input_file_path)
-            seed = inp_tuple[13]
+            json_data["seed"] = inp["seed"]
 
-            json_data["seed"] = seed
+
+        if "lambdax_top" not in json_data:
+            # calc some parameters from data in inp
+            nx = inp["nx"]
+            ny = inp["ny"]
+            nz = inp["nz"]
+
+            os.chdir(dissolCases_directory + '/' + case_directory + "/etching")
+            last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+            print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+
+            df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
+                                                     nrows=(nx + 1) * (ny + 1) * (nz + 1))
+            zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+
+            statistic_params = get_roughness_parameters.get_roughness_parameters(inp, zs)
+            json_data.update(statistic_params)
 
         # Open the JSON file for writing (this will overwrite the existing file)
-
         open(filepath, 'w').write(json.dumps(json_data, indent=4))
     else:
         print('ignored: ' + filepath)
@@ -200,7 +217,7 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 
 
 if __name__ == "__main__":
-    # dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
+    # batch_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
     root_dir = 'C:/Users/tohoko.tj/dissolCases/'
     update_all_json_in_dissolCases(root_dir)
     replace_all_json_in_dissolCases(root_dir)
