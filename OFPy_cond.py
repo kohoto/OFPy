@@ -17,12 +17,7 @@ else:
 
 def calc_cond(case_directory):
     input_file_path = case_directory + 'inp'
-    inp_tuple = m3d.read_input(input_file_path)
-
-    inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6],
-           "nx": int(inp_tuple[3] / inp_tuple[6]),
-           "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
-           "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12], "seed": inp_tuple[13]}
+    inp = m3d.read_input(input_file_path)
 
     """ calc some parameters from inputs """
     # number of grids
@@ -104,7 +99,7 @@ def calc_cond(case_directory):
         for key, value in new_pars.items():
             json_data[key] = value
 
-    open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
+    open(case_directory + '/cond.json', 'w').write(json.dumps(new_pars, indent=4))
     return 0
 
 

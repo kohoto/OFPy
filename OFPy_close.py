@@ -7,9 +7,9 @@ else:
     from . import OFPy_deform_mesh
 
 dissolCases_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_025/'
-# dissolCases_directory = '/scratch/user/tohoko.tj/dissolCases/dissolCases_230327/'
+# batch_directory = '/scratch/user/tohoko.tj/dissolCases/dissolCases_230327/'
 
-# close a fracture for the all projects in 'dissolCases_directory' all at once.
+# close a fracture for the all projects in 'batch_directory' all at once.
 def close_frac(dissolCases_directory):
     # get polyMesh from etching folder.
     os.chdir(dissolCases_directory)

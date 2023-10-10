@@ -10,22 +10,21 @@ else:
 
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
 
-def prep_batch(dissolCases_directory, start_proj_name):
+def prep_batch(batch_directory, start_proj_name):
     """
     Use after OFPy_make_case.py.
     Create 'etching' and 'conductivity' directories.
-    Copy OF input files from start_proj to each project directory in dissolCases_directory.
-
-    :param dissolCases_directory: path to the directory you desire to copy OF input files from.
+    Copy OF input files from start_proj to each project directory in batch_directory.
+    :param batch_directory: path to the directory you desire to copy OF input files from.
     :param start_proj_name: path to the template project directory.
     :return: a set of the OF projects ready to run.
     """
     cond_list = ['conductivity' + str(pc * 1000) for pc in list(range(1, 5))]
     cases = ['etching'] + cond_list
     # get polyMesh from etching folder.
-    os.chdir(dissolCases_directory)
-    dir_list = os.listdir(dissolCases_directory)
-    dir_list = [d for d in dir_list if os.path.isdir(os.path.join(dissolCases_directory, d))]
+    os.chdir(batch_directory)
+    dir_list = os.listdir(batch_directory)
+    dir_list = [d for d in dir_list if os.path.isdir(os.path.join(batch_directory, d))]
 
     # copy cases
     for new_proj_name in dir_list:
@@ -44,7 +43,7 @@ def prep_batch(dissolCases_directory, start_proj_name):
                    # remove constant except polyMesh
                    'rm ' + new_case_dir + '/constant/transportProperties' + command_separator,
                    # add symbolic links in constant except polyMesh
-                   'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir +'/constant/transportProperties'  + command_separator,
+                   'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir + '/constant/transportProperties' + command_separator,
                    # add symbolic links for other dirs
                    'ln -s ' + start_case_dir + '/system ' + new_case_dir + command_separator,
                    'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + command_separator,
@@ -76,8 +75,8 @@ def prep_batch(dissolCases_directory, start_proj_name):
 
 
 if __name__ == '__main__':
-    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_05'
+    batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_05'
     start_proj_name = 'C:/Users/tohoko.tj/dissolCases/start_proj'
 
-    prep_batch(dissolCases_directory, start_proj_name)
+    prep_batch(batch_dir, start_proj_name)
 

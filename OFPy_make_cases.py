@@ -10,24 +10,16 @@ plt.style.use("tamu_style")
 # this is to use from Windows pc. (Linux doens't have plot support)
 
 
-def main():
+def make_case(lx, ly, lz, cellsize, nz, lambda_xs, lambda_ys, stdevs, seed):
     """
     Create a set of random width distributions for various correlation length.
     Variance will be the same for all.
     :return: 'roughness' output file
     """
-    Lx = 7.0; Ly = 1.7; Lz = 0.1; cellsize = 0.025; nz = 10
-    seed = 6000
-    # use a single standard deviation (but make it into an array just for np.meshgrid)
-    stdevs = np.array([0.05])
-    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + str(seed) + '-stdev' + str(stdevs[0]).replace('.', '_') + '/'
-
+    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + str(seed)\
+                            + '-stdev' + str(stdevs[0]).replace('.', '_') + '/'
     if not os.path.exists(dissolCases_directory):
         os.mkdir(dissolCases_directory)
-
-    # 21 combinations of lambda_x, lambda_y
-    lambda_xs = np.round(np.arange(1.0, 6.1, 1.0), 3)
-    lambda_ys = np.round(np.arange(0.5, 1.51, 0.5), 3)
     lambda_xs, lambda_ys, stdevs = np.meshgrid(lambda_xs, lambda_ys, stdevs)
 
     # create inp files and dir for it first
@@ -35,7 +27,7 @@ def main():
         inp = ["image_type file_type dpi # by default, white space is the separator\n",
                "{} {} {}\n".format('tif', 'stl', 600),
                "Lx [in], Ly [in], Lz [in], cellsize [in], nz, height [in], mean [in], stdev [in]\n",
-               "{} {} {} {} {} {} {} {}\n".format(Lx, Ly, Lz, cellsize, nz, 0.0, 0.0, stdev),
+               "{} {} {} {} {} {} {} {}\n".format(lx, ly, lz, cellsize, nz, 0.0, 0.0, stdev),
                "corr_x [in], corr_y [in], seed\n", # random number seed  for stochastic simulation
                "{} {} {}\n".format(lambda_x, lambda_y, seed),
                "ncut_x ncut_y\n",
@@ -59,18 +51,26 @@ def make_roughness(case_name):
     :param case_name: a single case name
     :return: 'roughness' output file
     """
-    input_file_path = '/inp'
-
-    [image_type, file_type, dpi, Lx, Ly, Lz, cell_size, nz, height, mean, stdev, hmaj1, hmin1, seed, n_cut, ridge, ridge_height, ridge_margin] = m3d.read_input(case_name + input_file_path)
+    inp = m3d.read_input(case_name + '/inp')
 
     # number of grids
-    nx = int(Lx / cell_size) + 1
-    ny = int(Ly / cell_size) + 1
+    lx = inp["lx"] * 0.0254
+    ly = inp["ly"] * 0.0254
+    lz = inp["lz"] * 0.0254
+    nx = inp["nx"]
+    ny = inp["ny"]
+    dx = inp["dx"]
+    mean = inp["mean"]
+    stdev = inp["stdev"]
+    hmaj1 = inp["hmaj1"]
+    hmin1 = inp["hmin1"]
+    seed = inp["seed"]
+
 
     # Make a truth model / unconditional simulation
     var = gsp.make_variogram(nug=0.0, nst=1, it1=1, cc1=1.0, azi1=90.0, hmaj1=hmaj1, hmin1=hmin1)
     # write a width distribution on 'roughness' file
-    width = gsp.GSLIB_sgsim_2d_uncond(1, nx, ny, cell_size, seed + 3, var, 'roughness')
+    width = gsp.GSLIB_sgsim_2d_uncond(1, nx, ny, dx, seed + 3, var, 'roughness')
 
     # copy input files in the project directory for reference
     shutil.copyfile('GsPy3DModel/sgsim.par', case_name + '/sgsim.par')
@@ -79,7 +79,7 @@ def make_roughness(case_name):
     # since we have output file ('roughness'), the output array is used just for plotting.
     width = gsp.affine(width, mean, stdev)  #TODO: how does stdev work? I don't need this, since it's dealt later.
     decimal.getcontext().prec = 1
-    gsp.pixelplt(width, 0, Lx + cell_size, 0, Ly + cell_size, cell_size, -0.5, 0.5,
+    gsp.pixelplt(width, 0, lx + dx, 0, ly + dx, dx, -0.5, 0.5,
                  '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
 
     # show historam of prior distribution
@@ -100,4 +100,13 @@ def make_roughness(case_name):
 
 
 if __name__ == "__main__":
-    main()
+    inp_seed = 6000
+    # use a single standard deviation (but make it into an array just for np.meshgrid)
+    inp_stdev = np.array([0.05])
+
+    # 21 combinations of lambda_x, lambda_y
+    make_case(lx=7.0, ly=1.7, lz=0.1,
+              cellsize=0.025, nz=10,
+              lambda_xs=np.round(np.arange(1.0, 6.1, 1.0), 3),
+              lambda_ys=np.round(np.arange(0.5, 1.51, 0.5), 3),
+              stdevs=inp_stdev, seed=inp_seed)

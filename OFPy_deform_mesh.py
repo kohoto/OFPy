@@ -40,11 +40,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     # read nx, ny, size from the input file
     input_file_path = '/inp'
 
-    inp_tuple = m3d.read_input(case_directory + input_file_path)
-    # [image_type, file_type, dpi, Lx, Ly, Lz, cell_size, nz, height, mean, stdev, hmaj1, hmin1, seed, n_cut, ridge, ridge_height, ridge_margin] =
-    inp = {"lx": inp_tuple[3], "ly": inp_tuple[4], "lz": inp_tuple[5], "dx": inp_tuple[6], "nx": int(inp_tuple[3] / inp_tuple[6]),
-           "ny": int(inp_tuple[4] / inp_tuple[6]), "nz": inp_tuple[7], "lz": inp_tuple[8],
-           "mean": inp_tuple[9], "stdev": inp_tuple[10], "hmaj1": inp_tuple[11], "hmin1": inp_tuple[12]}
+    inp = m3d.read_input(case_directory + input_file_path)
 
     # calc some parameters from data in inp
     # number of grids
