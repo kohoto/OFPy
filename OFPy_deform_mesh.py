@@ -11,11 +11,9 @@ from GsPy3DModel import model_3D as m3d
 if platform.system() == 'Windows':
     import edit_polyMesh
     import deform_blockMesh
-    import get_roughness_parameters
 else:
     from . import edit_polyMesh
     from . import deform_blockMesh
-    from . import get_roughness_parameters
 
 
 def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
