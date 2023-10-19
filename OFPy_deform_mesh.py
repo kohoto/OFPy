@@ -32,9 +32,9 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
     initial_dir = os.getcwd()
     if close:
-        print('Preparing mesh for ' + case_directory + 'closure')
+        print('Preparing mesh for ' + case_directory + '/closure')
     else:
-        print('Preparing mesh for ' + case_directory + 'etching')
+        print('Preparing mesh for ' + case_directory + '/etching')
 
     # close = True
     # read nx, ny, size from the input file

@@ -7,12 +7,12 @@ def read_OF_boundary(fpath, nrows):
 
 
 def read_OF_points(fpath, nrows):
-    df = pd.read_csv(fpath, nrows=nrows, skiprows=20, sep=" ", header=None, names=["x", "y", "z"], on_bad_lines='skip')
+    df = pd.read_csv(fpath, nrows=nrows, skiprows=20, sep=" ", header=None, names=["x", "y", "z"])
     # df.drop(df.tail(2).index, inplace=True)  # drop last 2 rows
     # df = df[:-2]  # somehow nrows and skipfooter didn't work well
-    df["x"] = df["x"].astype(str).str.replace("(", '').astype(float)
+    df["x"] = df["x"].astype(str).str.replace("(", "", regex=False).astype(float)
     df["y"] = df["y"].astype(float)
-    df["z"] = df["z"].astype(str).str.replace(")", '').astype(float)
+    df["z"] = df["z"].astype(str).str.replace(")", "", regex=False).astype(float)
 
     # extract the points only from surface (this affects only for points_surface)
     # df.drop(df[df["z"] > 0.1].index, inplace=True)
