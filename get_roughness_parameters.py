@@ -1,7 +1,6 @@
 import numpy as np
 import json
 import pandas as pd
-import plotly.graph_objects as go
 from GsPy3DModel import geostatspy as gsp
 import OFPy_load_json
 import os
@@ -62,7 +61,8 @@ def generate_variogram(inp, zs):
     return {"varx": varx, "vary": vary, "mean": mean, "stdev": stdev}
 
 
-def plot_variogram_all_json_in_dissolCases(root_directory):  # For Linux and Windows
+def plot_variogram_all_json_in_dissolCases(root_directory):  # For Windows
+    import plotly.graph_objects as go
     # get parameters from json file in all project directories in batch_directory
     trace_list = OFPy_load_json.apply_func_to_all_projects_in_dissolCases(root_directory, load_variogram)
     layout = go.Layout(title="Variogram",
@@ -101,12 +101,14 @@ def trace_variograms(obj, trace_list, label):
 
 
 def trace_variogram(var_dict, label):
+    import plotly.graph_objects as go
     idx = var_dict["lag"].index(var_dict["h"])
     return [go.Scatter(x=var_dict["lag"], y=var_dict["gamma"], name=label),
             go.Scatter(x=[var_dict["h"]], y=[var_dict["gamma"][idx]], mode='markers', showlegend=False)]
 
 
 def generate_variogram_lbl(inp, zs):
+    import plotly.graph_objects as go
     # generate profilometer variogram line by line
     # read input
     lx = inp["lx"]
@@ -182,6 +184,7 @@ def iso_filter(width):
 
 
 def plot_waviness_and_roughness(waviness, roughness, width):
+    import plotly.graph_objects as go
     fig = go.Figure()
     y_mid = int(waviness.shape[0] / 2)
     # plot original
