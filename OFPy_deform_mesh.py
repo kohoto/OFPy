@@ -51,7 +51,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     ny = inp["ny"]
     nz = inp["nz"]
     dx = inp["dx"]
-    dy = inp["dy"]
+    dy = inp["dx"]
     mean = inp["mean"]
     stdev = inp["stdev"]
     hmaj1 = inp["hmaj1"]
