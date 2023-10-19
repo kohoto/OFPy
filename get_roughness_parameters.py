@@ -1,8 +1,13 @@
 import numpy as np
 import json
 import pandas as pd
-from GsPy3DModel import geostatspy as gsp
-import OFPy_load_json
+import platform
+
+if platform.system() == 'Windows':
+    import OFPy_load_json
+else:
+    from . import OFPy_load_json
+
 import os
 
 def get_roughness_parameters(inp, zs):
