@@ -4,7 +4,7 @@ import write_IOObject as ioobject
 
 def make_mineralogy_visualization_files(project_directory):
     # get mineralogy from dictionary
-    mineralogy_list = ioobject.IOObject2dict(project_directory + '/etching/constant/rockProperties')
+    mineralogy_list = ioobject.IOObject2dict(project_directory + '/etching/0/mineralogy')
     mineralogy_list = mineralogy_list['mineralogy']  # check the order of values.
 
     # get the file contents except the header

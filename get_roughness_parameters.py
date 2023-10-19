@@ -1,9 +1,9 @@
 import numpy as np
+import json
 import pandas as pd
 import plotly.graph_objects as go
 from GsPy3DModel import geostatspy as gsp
-from GsPy3DModel import model_3D as m3d
-import edit_polyMesh
+import OFPy_load_json
 import os
 
 def get_roughness_parameters(inp, zs):
@@ -16,19 +16,13 @@ def get_roughness_parameters(inp, zs):
 
     statistic_params = {}
 
-    [statistic_params['lambdax_top'],
-     statistic_params['lambdaz_top'],
-     statistic_params['mean_top'],
-     statistic_params['sigma_top']] = generate_variogram(inp, zs[:, :, -1])
-    [statistic_params['lambdax_btm'],
-     statistic_params['lambdaz_btm'],
-     statistic_params['mean_btm'],
-     statistic_params['sigma_btm']] = generate_variogram(inp, zs[:, :, 0])
-
+    statistic_params['top'] = generate_variogram(inp, zs[:, :, -1])
+    statistic_params['btm'] = generate_variogram(inp, zs[:, :, 0])
     return statistic_params
 
 
 def generate_variogram(inp, zs):
+    from scipy.signal import find_peaks
 
     # read input
     lx = inp["lx"]
@@ -39,8 +33,8 @@ def generate_variogram(inp, zs):
     dx = lx / nx
     dy = ly / ny
 
-    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny+1, 1)).T  # inch
-    ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx+1, 1))
+    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny + 1, 1)).T  # inch
+    ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx + 1, 1))
     zs = zs / 0.0254
 
     # compute mean and stdev
@@ -56,23 +50,60 @@ def generate_variogram(inp, zs):
 
     # Plot variogram in horizontal direction
     lag_x, gamma_x, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=nx, lagdist=dx, azi=90, atol=2.0, bstand=1)
-
-    # Plot variogram in vertical direction
     lag_y, gamma_y, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=ny, lagdist=dy, azi=0, atol=2.0, bstand=1)
+
+    # Ask user to input correlation length from lag distance plot.
+    # hmaj1 = input("Enter correlation length in x [in]:")
+    # hmin1 = input("Enter correlation length in y [in]:")
+    hmaj1_idx = find_peaks(gamma_x, width=0.5)[0][0]
+    hmin1_idx = find_peaks(gamma_y, width=0.5)[0][0]
+    varx = {"lag": lag_x, "gamma": gamma_x, "h": lag_x[hmaj1_idx]}
+    vary = {"lag": lag_y, "gamma": gamma_y, "h": lag_y[hmin1_idx]}
+    return {"varx": varx, "vary": vary, "mean": mean, "stdev": stdev}
+
+
+def plot_variogram_all_json_in_dissolCases(root_directory):  # For Linux and Windows
+    # get parameters from json file in all project directories in batch_directory
+    trace_list = OFPy_load_json.apply_func_to_all_projects_in_dissolCases(root_directory, load_variogram)
     layout = go.Layout(title="Variogram",
                        xaxis_title="Lag distance [in]",
                        yaxis_title="Variogram")
-    fig = go.Figure(data=[go.Scatter(x=lag_x, y=gamma_x, name="x-dir"),
-                          go.Scatter(x=lag_y, y=gamma_y, name="y-dir")],
-                    layout=layout)
+    fig = go.Figure(data=trace_list, layout=layout)
     fig.add_hline(y=1)
     fig.show()
 
-    # Ask user to input correlation length from lag distance plot.
-    hmaj1 = input("Enter correlation length in x [in]:")
-    hmin1 = input("Enter correlation length in y [in]:")
+def load_variogram(dissolCases_directory, case_directory, trace_list):
+    """
 
-    return hmaj1, hmin1, mean, stdev
+    """
+    filepath = dissolCases_directory + '/' + case_directory + '/variogram.json'
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            obj = json.load(f)
+            trace_list = trace_variograms(obj, trace_list, case_directory)
+    return trace_list
+
+
+def trace_variograms(obj, trace_list, label):
+    if isinstance(obj, dict):
+        if obj.get('lag') == None: # while I can't find lag and gamma, keep looping
+            for key, value in obj.items():
+                if isinstance(value, dict):
+                    trace_list = trace_variograms(value, trace_list, label + "_" + key)
+                else:
+                    continue
+
+        else:
+            l = trace_variogram(obj, label)
+            trace_list.extend(l)
+
+    return trace_list
+
+
+def trace_variogram(var_dict, label):
+    idx = var_dict["lag"].index(var_dict["h"])
+    return [go.Scatter(x=var_dict["lag"], y=var_dict["gamma"], name=label),
+            go.Scatter(x=[var_dict["h"]], y=[var_dict["gamma"][idx]], mode='markers', showlegend=False)]
 
 
 def generate_variogram_lbl(inp, zs):
@@ -86,8 +117,8 @@ def generate_variogram_lbl(inp, zs):
     dx = lx / nx
     dy = ly / ny
 
-    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny+1, 1)).T  # inch
-    ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx+1, 1))
+    xs = np.tile(np.arange(0, lx + 0.0001, dx), (ny + 1, 1)).T  # inch
+    ys = np.tile(np.arange(0, ly + 0.0001, dy), (nx + 1, 1))
     zs = zs / 0.0254
 
     # compute mean and stdev
@@ -173,25 +204,6 @@ def plot_waviness_and_roughness(waviness, roughness, width):
 
 
 if __name__ == '__main__':  # testing the function
+    root_dir = 'C:/Users/tohoko.tj/dissolCases/'
+    trace = plot_variogram_all_json_in_dissolCases(root_dir)
 
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/seed2000-stdev0_05/lambda1_0-0_5-stdev0_05'
-
-    # read nx, ny, size from the input file
-    input_file_path = '/inp'
-
-    inp = m3d.read_input(case_directory + input_file_path)
-
-    # calc some parameters from data in inp
-    nx = inp["nx"]
-    ny = inp["ny"]
-    nz = inp["nz"]
-
-    os.chdir(case_directory + "/etching")
-    last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
-    print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
-
-    df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
-                                             nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-
-    statistic_params_top = get_roughness_parameters(inp, zs)

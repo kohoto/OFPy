@@ -7,6 +7,7 @@ import json
 
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
+
 if platform.system() == 'Windows':
     import edit_polyMesh
     import deform_blockMesh
@@ -16,7 +17,8 @@ else:
     from . import deform_blockMesh
     from . import get_roughness_parameters
 
-def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
+
+def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     """
     Implements the roughness data to blockMesh and save the new blockMesh file to '0' directory.
     Originally, blockMesh command in OF crates a box mesh without roughenss on the surface.
@@ -113,6 +115,9 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
 
         details = {
             'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
+            #TODO: calc this
+            'wid_e__in': np.mean(etched_wids)
+            #TODO: get statistical parameters of widths distribution
         }
         open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
 
@@ -121,16 +126,19 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
         for pc in pcs:
             os.chdir(case_directory + "/conductivity" + str(pc))
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
-            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), df_points_deformed)  # write new mesh in constant/polyMesh/
+            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
+                                            df_points_deformed)  # write new mesh in constant/polyMesh/
 
     else:
-        df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, roughness=roughness)  # roughness file is in [inch]
-        edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), df_points_deformed)  # write new mesh in constant/polyMesh/
+        df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points,
+                                                               roughness=roughness)  # roughness file is in [inch]
+        edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
+                                        df_points_deformed)  # write new mesh in constant/polyMesh/
 
     end = time.time()
     print("elapsed time: " + str(end - start) + " s")
 
-    #TODO: check mesh. If I'm not running it here, then where I run checkMesh?
+    # TODO: check mesh. If I'm not running it here, then where I run checkMesh?
 
     # for Lenovo linux
     # if close:
@@ -145,7 +153,7 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
     #                            "mkdir 0/polyMesh;"
     #                            "cp -r constant/polyMesh/points 0/polyMesh/points;"
     #                            , shell=True, executable='/bin/bash')
-    
+
     # for grace
     # os.system('checkMesh -allGeometry -allTopology')
 
@@ -155,3 +163,15 @@ def prep_case(case_directory, close):  #For Linux and Windows (no OF command)
         os.system('cp -r constant/polyMesh/points 0/polyMesh/points')
 
     os.chdir(initial_dir)
+
+
+# close a fracture for the all projects in 'batch_directory' all at once.
+if __name__ == "__main__":
+    dissolCases_dir = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_025/'
+    # get polyMesh from etching folder.
+    os.chdir(dissolCases_dir)
+    dir_list = os.listdir(dissolCases_dir)
+
+    # run case
+    for proj in dir_list:
+        prep_case(proj, close=True)

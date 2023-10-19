@@ -7,20 +7,36 @@ import pandas as pd
 from GsPy3DModel import model_3D as m3d
 import edit_polyMesh
 import get_roughness_parameters
+import plotly.graph_objects as go
 
 if platform.system() == 'Windows':
     import plot_default_format
 else:
     from . import plot_default_format
-plt.style.use("my_style")
 
 # apply default format for plots
 plot_default_format.plot_format_Tohoko()
 
 
+def write_variogram_all_json_in_dissolCases(root_directory):  # For Linux and Windows
+    # get parameters from json file in all project directories in batch_directory
+    apply_func_to_all_projects_in_dissolCases(root_directory, write_variogram_json)
+
+
+def rewrite_all_json_in_dissolCases(root_directory):  # For Linux and Windows
+    # get parameters from json file in all project directories in batch_directory
+    apply_func_to_all_projects_in_dissolCases(root_directory, rewrite_json)
+
+
 def update_all_json_in_dissolCases(root_directory):  # For Linux and Windows
     # get parameters from json file in all project directories in batch_directory
-    apply_func_to_all_projects_in_dissolCases(root_directory, update_json)
+    trace = apply_func_to_all_projects_in_dissolCases(root_directory, update_json)
+    layout = go.Layout(title="Variogram",
+                       xaxis_title="Lag distance [in]",
+                       yaxis_title="Variogram")
+    fig = go.Figure(data=trace, layout=layout)
+    fig.add_hline(y=1)
+    fig.show()
 
 def concatenate_all_json_in_dissolCases(root_directory):
     par = apply_func_to_all_projects_in_dissolCases(root_directory, concatenate_json)
@@ -62,7 +78,7 @@ def apply_func_to_all_projects_in_dissolCases(root_directory, func):
 
     """
     initial_dir = os.getcwd()
-    out = {}
+    out = []
 
     # loop through each file in the directory
     # correct folder names (not path)
@@ -110,7 +126,7 @@ def load_json_cond(dissolCases_directory, case_directory, par):  # For Linux and
     return par
 
 
-def update_json(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
+def update_json(dissolCases_directory, case_directory, trace):  # For Linux and Windows (no OF command)
     """
     Update the content of cond.json from the old format to the new format. (The file geenrated before 9/14/2023 is in old format.)
     :return:
@@ -120,13 +136,12 @@ def update_json(dissolCases_directory, case_directory, par):  # For Linux and Wi
         json_data = json.load(open(filepath, 'r'))
         input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
         inp = m3d.read_input(input_file_path)
-
+        print('Working on ' + dissolCases_directory + '/' + case_directory)
         if "seed" not in json_data:
             # read seed from inp
             json_data["seed"] = inp["seed"]
 
-
-        if "lambdax_top" not in json_data:
+        if "top" not in json_data:
             # calc some parameters from data in inp
             nx = inp["nx"]
             ny = inp["ny"]
@@ -134,19 +149,77 @@ def update_json(dissolCases_directory, case_directory, par):  # For Linux and Wi
 
             os.chdir(dissolCases_directory + '/' + case_directory + "/etching")
             last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
-            print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
 
             df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
                                                      nrows=(nx + 1) * (ny + 1) * (nz + 1))
             zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-
             statistic_params = get_roughness_parameters.get_roughness_parameters(inp, zs)
             json_data.update(statistic_params)
+
+            #
+            df_points = edit_polyMesh.read_OF_points("0/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+            zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+            statistic_params_before = get_roughness_parameters.get_roughness_parameters(inp, zs)
 
         # Open the JSON file for writing (this will overwrite the existing file)
         open(filepath, 'w').write(json.dumps(json_data, indent=4))
     else:
         print('ignored: ' + filepath)
+
+    return trace  # return empty dict for consistency
+
+
+def rewrite_json(dissolCases_directory, case_directory, trace):  # For Linux and Windows (no OF command)
+    """
+    Update the content of cond.json from the old format to the new format. (The file geenrated before 9/14/2023 is in old format.)
+    :return:
+    """
+    filepath = dissolCases_directory + '/' + case_directory + '/cond.json'
+    if os.path.isfile(filepath):
+        json_data = json.load(open(filepath, 'r'))
+        input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
+        inp = m3d.read_input(input_file_path)
+        print('Working on ' + dissolCases_directory + '/' + case_directory)
+
+        if "top" in json_data:
+            open(filepath, 'w').write(json.dumps(json_data))
+    else:
+        print('ignored: ' + filepath)
+
+    return trace  # return empty dict for consistency
+
+
+def write_variogram_json(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
+    """
+    Update the content of cond.json from the old format to the new format. (The file geenrated before 9/14/2023 is in old format.)
+    :return:
+    """
+    filepath = dissolCases_directory + '/' + case_directory + '/variogram.json'
+    input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
+    inp = m3d.read_input(input_file_path)
+    print('Working on ' + dissolCases_directory + '/' + case_directory)
+
+    # calc some parameters from data in inp
+    nx = inp["nx"]
+    ny = inp["ny"]
+    nz = inp["nz"]
+
+    os.chdir(dissolCases_directory + '/' + case_directory + "/etching")
+    last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+
+    statistic_params = {}
+    df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
+                                             nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+    statistic_params['after'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
+
+
+    df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+    statistic_params['before'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
+
+    # Open the JSON file for writing (this will overwrite the existing file)
+    open(filepath, 'w').write(json.dumps(statistic_params, indent=4))
 
     return {}  # return empty dict for consistency
 
@@ -219,7 +292,9 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 if __name__ == "__main__":
     # batch_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
     root_dir = 'C:/Users/tohoko.tj/dissolCases/'
-    update_all_json_in_dissolCases(root_dir)
-    replace_all_json_in_dissolCases(root_dir)
-    concatenate_all_json_in_dissolCases(root_dir)
-    plot_trend(root_dir)
+    write_variogram_all_json_in_dissolCases(root_dir)
+    # rewrite_all_json_in_dissolCases(root_dir)
+    # update_all_json_in_dissolCases(root_dir)
+    # replace_all_json_in_dissolCases(root_dir)
+    # concatenate_all_json_in_dissolCases(root_dir)
+    # plot_trend(root_dir)

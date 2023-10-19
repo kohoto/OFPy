@@ -1,13 +1,10 @@
 import numpy as np
 import scipy as sp
 import pandas as pd
-import json
-import matplotlib.pyplot as plt
 import platform
 if platform.system() == 'Windows':
-    import read_field
-else:
-    from . import read_field
+    import plotly.graph_objects as go
+
 
 def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     """
@@ -43,11 +40,9 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
 
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
 
-    wids = zs[:, :, -1]- zs[:, :, 0]  # top surface - btm surface
+    wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
 
     if close:
-
-
         youngs_modulus = 1e6  # psi
         load = 48 * pc  # N
         min_disp = np.min(wids)  # in inch
@@ -55,11 +50,33 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
 
         sol = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
                                           bounds=(min_disp, max_disp), method='bounded')
-        min_width = 0.99 * min_disp
-        wids -= min_width
 
-        wids = (wids - sol.x) * ((wids - sol.x) > 0) + min_width * ((wids - sol.x) <= 0)
+        # calculate wids distribution when the min wid point touched
+        # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
+        # min_width = 0.99 * min_disp
+        # wids -= min_width
+
+        wids = (wids - sol.x) * ((wids - sol.x) > 0) + 0.01 * min_disp * ((wids - sol.x) <= 0)
         np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
+
+        if platform.system() == 'Windows':
+            # show the contour of fracture opening
+            layout = go.Layout(title="Width distribution at Pc = {} Pa".format(pc), yaxis_scaleanchor="x")
+            # np.where... is not to show the closed points in plot
+            fig = go.Figure(
+                data=[go.Heatmap(z=np.where(wids.T == 0.01 * min_disp, np.nan, wids.T), connectgaps=False, dx=dx, dy=dy)],
+                layout=layout)
+            fig.show()
+
+            # plot CDF of the wids dist
+            layout = go.Layout(title="Width distribution at Pc = {} Pa".format(pc), yaxis_scaleanchor="x")
+            hist, bin_edges = np.histogram(np.where(wids.T == 0.01 * min_disp, 0.0, wids.T), bins=100, density=True)
+            cdf = np.cumsum(hist * np.diff(bin_edges))
+            fig = go.Figure(data=[
+                go.Scatter(x=bin_edges, y=cdf, name='CDF')
+            ])
+            fig.show()
+
     else:  # shift
         zs[:, :, -1] += roughness
 
@@ -90,3 +107,34 @@ def f(disp, wids, max_disp, youngs_modulus, dx, dy, load):
 
     # if the force is the same as my input, return, if not, change the displacement by * F / calced force
     return abs((load_calc - load) / load)
+
+
+if __name__ == "__main__":
+    # testing the closure function with closure pressure
+    from GsPy3DModel import model_3D as m3d
+    import os
+    import edit_polyMesh
+
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/seed2000-stdev0_05/lambda1_0-0_5-stdev0_05'
+
+    # read nx, ny, size from the input file
+    input_file_path = '/inp'
+
+    inp = m3d.read_input(case_directory + input_file_path)
+    # calc some parameters from data in inp
+    nx = inp["nx"]
+    ny = inp["ny"]
+    nz = inp["nz"]
+
+
+    os.chdir(case_directory + "/etching")
+    last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+    print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+
+    df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
+                                             nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    df_points['index_column'] = df_points.index
+
+    deform_blockMesh(inp, df_points, roughness=None, pc=4000)
+
+
