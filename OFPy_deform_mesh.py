@@ -46,12 +46,12 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     # number of grids
     lx = inp["lx"]
     ly = inp["ly"]
-    lz = inp["lz"]
+    lz = inp["lz"] * 0.0254  # inch => m
     nx = inp["nx"]
     ny = inp["ny"]
     nz = inp["nz"]
-    dx = inp["dx"]
-    dy = inp["dx"]
+    dx = inp["dx"] * 0.0254
+    dy = inp["dx"] * 0.0254
     mean = inp["mean"]
     stdev = inp["stdev"]
     hmaj1 = inp["hmaj1"]
@@ -114,7 +114,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         details = {
             'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
             #TODO: calc this
-            'wid_e__in': np.mean(etched_wids)
+            'wid_e__in': np.mean(etched_wids) / 0.0254
             #TODO: get statistical parameters of widths distribution
         }
         open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))

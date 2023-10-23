@@ -51,9 +51,9 @@ def calc_cond(case_directory):
     # reshape p and U data into mesh shape
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
     # get inlet surface area
-    wids = zs[:, :, -1] - zs[:, :, 0]  # get width at inlet
+    wids = zs[:, :, -1] - zs[:, :, 0]
     #TODO: change this calculation to function "get_wids_distribution"
-    inlet_area = np.sum(wids[0, :]) * dy
+    inlet_area = np.sum(wids[0, :]) * dy  # get width at inlet
 
     avg_w = np.mean(wids)
     min_w = 0.01 * np.min(wids)
