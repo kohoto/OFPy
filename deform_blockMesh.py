@@ -59,7 +59,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         # shift top surface according to the disp solution
         zs[:, :, -1] -= 0.5 * disp.x
         # get new width
-        wids = (wids - disp.x) * ((wids - disp.x) > 0) + 0.01 * min_disp * ((wids - sol.x) <= 0)
+        wids = (wids - disp.x) * ((wids - disp.x) > 0) + 0.01 * min_disp * ((wids - disp.x) <= 0)
         np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
 
         if platform.system() == 'Windows':
