@@ -48,7 +48,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         min_disp = np.min(wids)  # in inch
         max_disp = np.max(wids)
 
-        sol = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
+        disp = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
                                           bounds=(min_disp, max_disp), method='bounded')
 
         # calculate wids distribution when the min wid point touched
@@ -56,7 +56,10 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         # min_width = 0.99 * min_disp
         # wids -= min_width
 
-        wids = (wids - sol.x) * ((wids - sol.x) > 0) + 0.01 * min_disp * ((wids - sol.x) <= 0)
+        # shift top surface according to the disp solution
+        zs[:, :, -1] -= 0.5 * disp
+        # get new width
+        wids = (wids - disp.x) * ((wids - disp.x) > 0) + 0.01 * min_disp * ((wids - sol.x) <= 0)
         np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
 
         if platform.system() == 'Windows':
