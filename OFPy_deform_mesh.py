@@ -56,6 +56,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     stdev = inp["stdev"]
     hmaj1 = inp["hmaj1"]
     hmin1 = inp["hmin1"]
+    seed = inp["seed"]
 
     if close:
         # get polyMesh from etching folder.
@@ -112,8 +113,11 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         etched_wids = wids.reshape(-1) - lz  # lz is the original frac opening
 
         details = {
+            'seed': seed,
+            'lambda_x__in': hmaj1,
+            'lambda_z__in': hmin1,
+            'stdev': stdev,
             'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
-            #TODO: calc this
             'wid_e__in': np.mean(etched_wids) / 0.0254
             #TODO: get statistical parameters of widths distribution
         }
@@ -165,7 +169,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
 # close a fracture for the all projects in 'batch_directory' all at once.
 if __name__ == "__main__":
-    dissolCases_dir = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_025/'
+    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
     # get polyMesh from etching folder.
     os.chdir(dissolCases_dir)
     dir_list = os.listdir(dissolCases_dir)
