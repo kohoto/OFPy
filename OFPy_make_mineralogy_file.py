@@ -3,10 +3,10 @@ import os
 import numpy as np
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
-import OFPy_create_dictionary
+import write_IOObject as write
 
 
-def prep_mineralogy_file(project_directory):  #For Linux and Windows (no OF command)
+def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF command)
     """
     Implements the roughness data to blockMesh and save the new blockMesh file to '0' directory.
     Originally, blockMesh command in OF crates a box mesh without roughenss on the surface.
@@ -30,11 +30,32 @@ def prep_mineralogy_file(project_directory):  #For Linux and Windows (no OF comm
     mean = inp["mean"]
     stdev = inp["stdev"]
 
-    os.chdir(project_directory + "/etching")
-    sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
-    mineralogy = gsp.affine(sim_array[0], mean, stdev).T < 0
-    #mineralogy = mineralogy[:-1, :-1]
-    OFPy_create_dictionary.write_OF_dictionary("mineralogy", mineralogy.flatten(), note="")
+    mineralogy_dist = 'pathchy'
+    if mineralogy_dist == 'rough':
+        os.chdir(project_directory + "/etching")
+        sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
+        mineralogy = gsp.affine(sim_array[0], mean, stdev).T < 0
+    elif mineralogy_dist == 'pathchy':
+        # create array
+        # add patchy distribution of insoluble minerals
+        import cv2
+
+        # Read the PNG image
+        image = cv2.imread(project_directory + 'img.png', cv2.IMREAD_GRAYSCALE)
+
+        # Define a insluble_mineral to separate black and white areas
+        insluble_mineral = 255  # Adjust this insluble_mineral as needed
+
+        # Create a binary mask where black areas are 0 and white areas are 1
+        mineralogy = (image != insluble_mineral).astype(np.uint8)
+        mineralogy = np.vstack([mineralogy, mineralogy[-1, :]])
+
+    # mineralogy = mineralogy[:-1, :-1]
+    str_list = write.write_OF_dictionary(cls="dictionary",
+                                         loc="constant",
+                                         obj="rockProperties",
+                                         dict={"mineralogy": mineralogy.flatten().tolist()})
+    write.write_file(str_list, project_directory + 'etching/constant/rockProperties')
 
 
 if __name__ == '__main__':

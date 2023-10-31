@@ -175,3 +175,12 @@ def get_header(cls, loc, obj, note=""):
         headers = h0 + h2
 
     return headers
+
+def write_OF_dictionary(cls, loc, obj, dict):
+    headers = get_header(cls, loc, obj)
+    str_list = write_dict(dict, level=0)
+    return headers + str_list
+
+
+def write_file(str_list, file_path):
+    open(file_path, 'w').write(''.join(str_list))
