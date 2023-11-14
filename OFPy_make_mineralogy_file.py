@@ -30,6 +30,7 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
     mean = inp["mean"]
     stdev = inp["stdev"]
 
+    # input array must be nx * ny (280 * 68)
     mineralogy_dist = 'pathchy'
     if mineralogy_dist == 'rough':
         os.chdir(project_directory + "/etching")
@@ -44,11 +45,11 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
         image = cv2.imread(project_directory + 'img.png', cv2.IMREAD_GRAYSCALE)
 
         # Define a insluble_mineral to separate black and white areas
-        insluble_mineral = 255  # Adjust this insluble_mineral as needed
+        insoluble_mineral = 255  # Adjust this insluble_mineral as needed
 
         # Create a binary mask where black areas are 0 and white areas are 1
-        mineralogy = (image != insluble_mineral).astype(np.uint8)
-        mineralogy = np.vstack([mineralogy, mineralogy[-1, :]])
+        mineralogy = (image != insoluble_mineral).astype(np.uint8)
+        mineralogy = mineralogy[:, :-1]  # Remove one pixel in x direction
 
     # mineralogy = mineralogy[:-1, :-1]
     str_list = write.write_OF_dictionary(cls="dictionary",

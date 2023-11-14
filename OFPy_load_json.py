@@ -78,7 +78,7 @@ def apply_func_to_all_projects_in_dissolCases(root_directory, func):
 
     """
     initial_dir = os.getcwd()
-    out = []
+    out = {}
 
     # loop through each file in the directory
     # correct folder names (not path)
@@ -268,9 +268,9 @@ def replace_infinity(obj):
     elif isinstance(obj, list):
         for i in range(len(obj)):
             obj[i] = replace_infinity(obj[i])
-    elif isinstance(obj, str):
-        if obj == 'Infinity':
-            return 10000000000
+    elif isinstance(obj, float):
+        if obj == float('inf'):
+            return '#N/A'
 
     return obj
 
@@ -292,9 +292,9 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 if __name__ == "__main__":
     # batch_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
     root_dir = 'C:/Users/tohoko.tj/dissolCases/'
-    write_variogram_all_json_in_dissolCases(root_dir)
+    # write_variogram_all_json_in_dissolCases(root_dir)
     # rewrite_all_json_in_dissolCases(root_dir)
     # update_all_json_in_dissolCases(root_dir)
-    # replace_all_json_in_dissolCases(root_dir)
-    # concatenate_all_json_in_dissolCases(root_dir)
+    replace_all_json_in_dissolCases(root_dir)
+    concatenate_all_json_in_dissolCases(root_dir)
     # plot_trend(root_dir)
