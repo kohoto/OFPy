@@ -26,6 +26,10 @@ def prep_batch(batch_directory, start_proj_name):
     dir_list = os.listdir(batch_directory)
     dir_list = [d for d in dir_list if os.path.isdir(os.path.join(batch_directory, d))]
 
+    # sbatch files
+    cmd = ['ln -s  ' + start_proj_name + '/EtchingBatch.sbatch ' + batch_directory + command_separator]
+    os.system(''.join(cmd))
+
     # copy cases
     for new_proj_name in dir_list:
         print('creating project files for ' + new_proj_name)
@@ -40,18 +44,18 @@ def prep_batch(batch_directory, start_proj_name):
             cmd = ['mkdir ' + new_case_dir + command_separator,
                    'cp -rp ' + start_case_dir + '/constant ' + new_case_dir + '/constant' + command_separator, # copy constant (cause polyMesh is unique)
                    'cp -rp ' + start_case_dir + '/Zero ' + new_case_dir + '/0' + command_separator,             # hard copy 0 files (will be rewritten by OF simulation)
-                   # remove constant except polyMesh
+                   # remove constant except polyMesh & add symbolic links in constant except polyMesh
                    'rm ' + new_case_dir + '/constant/transportProperties' + command_separator,
-                   # add symbolic links in constant except polyMesh
                    'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir + '/constant/transportProperties' + command_separator,
+
                    # add symbolic links for other dirs
                    'ln -s ' + start_case_dir + '/system ' + new_case_dir + command_separator,
-                   'ln -s ' + start_case_dir + '/Zero ' + new_case_dir + command_separator,
                    # hard copy bash files
-                   'cp ' + start_case_dir + '/Clean ' + new_case_dir + command_separator,
-                   'cp ' + start_case_dir + '/PararellRun ' + new_case_dir + command_separator,
-                   'cp ' + start_case_dir + '/SingleRun ' + new_case_dir + command_separator,
-                   'chmod 775 ' + new_case_dir + '/PararellRun ' + new_case_dir + '/SingleRun ' + new_case_dir + '/Clean']
+                   'ln -s  ' + start_case_dir + '/Clean ' + new_case_dir + command_separator,
+                   'ln -s  ' + start_case_dir + '/PararellRun ' + new_case_dir + command_separator,
+                   'ln -s  ' + start_case_dir + '/Single.sbatch ' + new_case_dir + command_separator,
+                   'ln -s  ' + start_case_dir + '/Pararell.sbatch ' + new_case_dir + command_separator,
+                   'chmod 775 ' + new_case_dir + '/PararellRun ' + new_case_dir + '/Clean']
 
             os.system(''.join(cmd))
 
