@@ -1,15 +1,15 @@
 import os
 import json
-import matplotlib.pyplot as plt
 import platform
 import numpy as np
 import pandas as pd
 from GsPy3DModel import model_3D as m3d
 import edit_polyMesh
 import get_roughness_parameters
-import plotly.graph_objects as go
 
 if platform.system() == 'Windows':
+    import matplotlib.pyplot as plt
+    import plotly.graph_objects as go
     import plot_default_format
 else:
     from . import plot_default_format

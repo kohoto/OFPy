@@ -4,8 +4,11 @@ import decimal
 import numpy as np
 from GsPy3DModel import geostatspy as gsp
 from GsPy3DModel import model_3D as m3d
-import matplotlib.pyplot as plt
-plt.style.use("tamu_style")
+
+import platform
+if platform.system() == 'Windows':
+    import matplotlib.pyplot as plt
+    plt.style.use("tamu_style")
 # STEP 1
 # this is to use from Windows pc. (Linux doens't have plot support)
 

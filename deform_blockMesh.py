@@ -4,6 +4,7 @@ import pandas as pd
 import platform
 import math as m
 if platform.system() == 'Windows':
+    from plotly.subplots import make_subplots
     import plotly.graph_objects as go
 
 
@@ -42,32 +43,23 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
 
     wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
-    min_disp = np.min(wids)
-    wid_threshold = 0.01 * min_disp # put it here so that threshold won't change with min_disp
+
     if close:
-        youngs_modulus = 3e6  # psi
+        youngs_modulus = 1e6  # psi
         load = 48 * pc  # N
 
+        wids_by_col = np.sum(wids, axis=1) / (ny + 1) # average width of each column
+        wids_by_col -= np.min(wids_by_col)  # getting waviness
+        wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
 
-        # determine angle of the surface
-        if pc == 1000:
-            angle = sp.optimize.minimize_scalar(f_angle, args=(zs, youngs_modulus, dx, dy, load),
-                                               bounds=(0, 10), method='bounded')
-            print(angle)
-            # rotate the top surface (I think tan and sin don't have a big difference)
-            zs[:, :, -1] += (np.ones((np.shape(zs)[1], np.shape(zs)[0])) * x_coords).T * np.tan(angle.x * np.pi / 180)
+        min_disp = np.min(wids)
+        max_disp = np.max(wids)
+        wid_threshold = 0.01 * min_disp  # put it here so that threshold won't change with min_disp
 
-            wids = zs[:, :, -1] - zs[:, :, 0]
-            min_disp = np.min(wids)
-            max_disp = np.max(wids)
-            disp = angle.fun + min_disp
-        else:
-            min_disp = np.min(wids)
-            max_disp = np.max(wids)
-            disp = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
-                                          bounds=(min_disp, max_disp), method='bounded')
-            disp = disp.x
-
+        disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, load),
+                                      bounds=(np.min(wids), np.max(wids)), tol=1e-6, method='bounded')
+        #disp_col.append(disp.x)
+        print(disp)
         # calculate wids distribution when the min wid point touched
         # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
         # min_width = 0.99 * np.min(abs(wids), axis=1)  # search min openings along y axis at each x-coord
@@ -75,31 +67,30 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
 
         # shift top surface according to the disp solution
 
-        top_surface_disp = 0.5 * (disp * ((wids - disp) > wid_threshold)  # surface that doesn't tough to be shifted with constant disp value
-                                  + (wids - wid_threshold) * ((wids - disp) <= wid_threshold))  # surface that touches shift until 0.5 * 0.01 * min_disp above from center
-        top_w_edge = zs[:, :, -1]
-        is_mountain = ((wids - disp) <= wid_threshold) * (zs[:, :, -1] == np.min(top_w_edge))
+        # top_surface_disp = 0.5 * (disp * ((wids - disp) > wid_threshold)  # surface that doesn't tough to be shifted with constant disp value
+        #                           + (wids - wid_threshold) * ((wids - disp) <= wid_threshold))  # surface that touches shift until 0.5 * 0.01 * min_disp above from center
+        # is_mountain = ((wids - disp) <= wid_threshold) * (zs[:, :, -1] == np.min(top_w_edge))
 
         # get new width
-        wids = (wids - disp) * ((wids - disp) > wid_threshold) + wid_threshold * ((wids - disp) <= wid_threshold)
-        np.savetxt("wids.csv", wids / 0.0254, delimiter=",")
-        print("Min disp is: " + str(min_disp))
+        wids = (wids - disp.x) * ((wids - disp.x) > wid_threshold) + wid_threshold * ((wids - disp.x) <= wid_threshold)
+
         if platform.system() == 'Windows':
             # show the contour of fracture opening
-            layout = go.Layout(title="Width distribution at Pc = {} Pa".format(pc), yaxis_scaleanchor="x")
             # np.where... is not to show the closed points in plot
-            fig = go.Figure(
-                data=[go.Heatmap(z=np.where(wids.T == wid_threshold*0.01, np.nan, wids.T), connectgaps=False, dx=dx, dy=dy)],
-                layout=layout)
-            fig.show()
+            fig = make_subplots(rows=2, cols=1)
 
+            fig.add_trace(
+                go.Heatmap(z=np.where(wids.T == wid_threshold, np.nan, wids.T), connectgaps=False, dx=dx, dy=dy),
+                row=1, col=1
+            )
+            fig.update_yaxes(anchor="x")
             # plot CDF of the wids dist
-            layout = go.Layout(title="Width distribution at Pc = {} Pa".format(pc), yaxis_scaleanchor="x")
             hist, bin_edges = np.histogram(np.where(wids.T == 0.01 * min_disp, 0.0, wids.T), bins=100, density=True)
             cdf = np.cumsum(hist * np.diff(bin_edges))
-            fig = go.Figure(data=[
-                go.Scatter(x=bin_edges, y=cdf, name='CDF')
-            ])
+            fig.add_trace(
+                go.Scatter(x=bin_edges, y=cdf, name='CDF'),
+                row=2, col=1
+            )
             fig.show()
 
     else:  # shift
@@ -126,23 +117,13 @@ def f(disp, wids, max_disp, youngs_modulus, dx, dy, load):
     # from the displacement and Young's modulus, get the pressure at the point
     stress = (disp_at_pts / max_disp) * youngs_modulus  # 4.0 is rock height for the both sides
 
-    # TODO: get the pressure around the contact point
     # calculate the force
     load_calc = np.sum(stress * 6894.76 * dx * dy)
 
     # if the force is the same as my input, return, if not, change the displacement by * F / calced force
+
     return abs((load_calc - load) / load)
 
-def f_angle(angle, zs, youngs_modulus, dx, dy, load):
-    x_coords = np.arange(0, dx * np.shape(zs)[0], dx)
-    zs_top = zs[:, :, -1] + (np.ones((np.shape(zs)[1], np.shape(zs)[0])) * x_coords).T * np.tan(angle * np.pi / 180)
-    wids = zs_top - zs[:, :, 0]
-    min_disp = np.min(wids)
-    max_disp = np.max(wids)
-    disp = sp.optimize.minimize_scalar(f, args=(wids, max_disp, youngs_modulus, dx, dy, load),
-                                       bounds=(min_disp, max_disp), method='bounded')
-    print(disp.x - min_disp)
-    return disp.x - min_disp
 
 if __name__ == "__main__":
     # testing the closure function with closure pressure
@@ -150,7 +131,7 @@ if __name__ == "__main__":
     import os
     import edit_polyMesh
 
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/seed2000-stdev0_05/lambda1_0-0_5-stdev0_05'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/seed2000-stdev0_05/lambda3_0-0_5-stdev0_05'
 
     # read nx, ny, size from the input file
     input_file_path = '/inp'
@@ -161,7 +142,6 @@ if __name__ == "__main__":
     ny = inp["ny"]
     nz = inp["nz"]
 
-
     os.chdir(case_directory + "/etching")
     last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
     print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
@@ -170,6 +150,7 @@ if __name__ == "__main__":
                                              nrows=(nx + 1) * (ny + 1) * (nz + 1))
     df_points['index_column'] = df_points.index
 
-    deform_blockMesh(inp, df_points, roughness=None, pc=1000)
+
+    deform_blockMesh(inp, df_points, roughness=None, pc=4000)
 
 

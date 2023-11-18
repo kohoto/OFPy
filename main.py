@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 
 pd.options.mode.chained_assignment = None  # default='warn'
-import matplotlib.pyplot as plt
+import platform
+if platform.system() == 'Windows':
+    import matplotlib.pyplot as plt
 
 
 def read_OF_points(fpath, nrows):

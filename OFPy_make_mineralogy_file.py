@@ -13,7 +13,7 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
     Preprocess for etching simulation, add deform the frac surface using 'roguhenss' output file.
     Preprocess for conductivity simulation, we deform the frac surface points from the fracture closure calculation.
 
-    :param project_directory:
+    :param project_directory: no slash at the end!
     :type  project_directory: str
     :return:
     """
@@ -21,7 +21,7 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
     # close = True
     # read nx, ny, size from the input file
 
-    inp = m3d.read_input(project_directory + 'inp')
+    inp = m3d.read_input(project_directory + '/inp')
 
     # calc some parameters from data in inp
     # number of grids
@@ -42,7 +42,7 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
         import cv2
 
         # Read the PNG image
-        image = cv2.imread(project_directory + 'img.png', cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(project_directory + '/img.png', cv2.IMREAD_GRAYSCALE)
 
         # Define a insluble_mineral to separate black and white areas
         insoluble_mineral = 255  # Adjust this insluble_mineral as needed
@@ -52,13 +52,19 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
         mineralogy = mineralogy[:, :-1]  # Remove one pixel in x direction
 
     # mineralogy = mineralogy[:-1, :-1]
+    #TODO: I still need to fix the file by hand. Need to write a code for field file.
     str_list = write.write_OF_dictionary(cls="dictionary",
                                          loc="constant",
                                          obj="rockProperties",
-                                         dict={"mineralogy": mineralogy.flatten().tolist()})
-    write.write_file(str_list, project_directory + 'etching/constant/rockProperties')
+                                         dict={"internalField": 0,
+                                               "boundaryField": {"solubleWall": mineralogy.flatten().tolist(),
+                                                                 "solubleWall_mirrored": mineralogy.flatten().tolist(),
+                                                                 "inlet": 0,
+                                                                 "outlet": 0,
+                                                                 "insolubleY": 0}})
+    write.write_file(str_list, project_directory + '/etching/constant/rockProperties')
 
 
 if __name__ == '__main__':
-    proj_dir = 'C:/Users/tohoko.tj/dissolCases/seed7500-stdev0_05/lambda1_0-0_5-stdev0_05/'
+    proj_dir = 'C:/Users/tohoko.tj/dissolCases/test_patchy/rough'
     prep_mineralogy_file(proj_dir)

@@ -1,4 +1,6 @@
-import matplotlib.pyplot as plt
+import platform
+if platform.system() == 'Windows':
+    import matplotlib.pyplot as plt
 
 def plot_format_Tohoko():
     """
