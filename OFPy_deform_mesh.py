@@ -30,6 +30,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     :return:
     """
 
+    start = time.time()
     initial_dir = os.getcwd()
     if close:
         print('Preparing mesh for ' + case_directory + '/closure')
@@ -62,13 +63,38 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         # get polyMesh from etching folder.
         last_timestep_dir = str(max([int(a) for a in os.listdir(case_directory + '/etching') if a.isnumeric()]))
         print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+        df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+        df_points['index_column'] = df_points.index
 
-        # copy mesh from etching project dir to conductivity project dir
-        pcs = [pc * 1000 for pc in list(range(1, 5))]
+        # compute paramters independent to pc and write cond.json file
+        zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+        wids = zs[:, :, -1] - zs[:, :, 0]
+        etched_wids = wids.reshape(-1) - lz  # lz is the original frac opening
+        details = {
+            'seed': seed,
+            'lambda_x__in': hmaj1,
+            'lambda_z__in': hmin1,
+            'stdev': stdev,
+            'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
+            'wid_e__in': np.mean(etched_wids) / 0.0254
+            #TODO: get statistical parameters of widths distribution
+        }
+        open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
+
+
+        # copy mesh from etching project dir to each conductivity dir
+        pcs = [pc * 1000 for pc in list(range(5))]
         for pc in pcs:
-            os.chdir(case_directory + "/conductivity" + str(pc))
+            os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
             os.system(
-                "mkdir constant/polyMesh; cp -r ../etching/constant/polyMesh constant; cp ../etching/" + last_timestep_dir + "/polyMesh/points constant/polyMesh/points")
+                "mkdir -p constant/polyMesh; "  # create directory if not exist
+                "cp -r ../etching/constant/polyMesh constant; "  # copy all mesh related files
+                "cp ../etching/" + last_timestep_dir + "/polyMesh/points constant/polyMesh/points")  # rewrite points only
+
+            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
+            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
+                                            df_points_deformed)  # write new mesh in constant/polyMesh/
+            os.system('checkMesh -allGeometry -allTopology')
 
     else:
         # run blockMesh and polyMesh
@@ -101,41 +127,18 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
         roughness = gsp.affine(sim_array[0], mean, stdev).T
 
-    start = time.time()
-    # df_points = edit_polyMesh.read_OF_points(f"conductivity/{}/polyMesh/points".int(num), nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    df_points['index_column'] = df_points.index
+        df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+        df_points['index_column'] = df_points.index
 
-    if close:
-        # compute etched width before closing
-        zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-        wids = zs[:, :, -1] - zs[:, :, 0]
-        etched_wids = wids.reshape(-1) - lz  # lz is the original frac opening
-
-        details = {
-            'seed': seed,
-            'lambda_x__in': hmaj1,
-            'lambda_z__in': hmin1,
-            'stdev': stdev,
-            'etched_vol__in3': 61023.7 * dx * dy * np.sum(etched_wids),  # 61023.7 is m3 -> in3
-            'wid_e__in': np.mean(etched_wids) / 0.0254
-            #TODO: get statistical parameters of widths distribution
-        }
-        open(case_directory + '/cond.json', 'w').write(json.dumps(details, indent=4))
-
-
-
-        for pc in pcs:
-            os.chdir(case_directory + "/conductivity" + str(pc))
-            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
-            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
-                                            df_points_deformed)  # write new mesh in constant/polyMesh/
-
-    else:
         df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points,
                                                                roughness=roughness)  # roughness file is in [inch]
         edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
                                         df_points_deformed)  # write new mesh in constant/polyMesh/
+        # finally, copy mesh to 0
+        if not os.path.exists('0/polyMesh'):
+            os.makedirs('0/polyMesh')
+        os.system('cp -r constant/polyMesh/points 0/polyMesh/points')
+        os.system('checkMesh -allGeometry -allTopology')
 
     end = time.time()
     print("elapsed time: " + str(end - start) + " s")
@@ -157,12 +160,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     #                            , shell=True, executable='/bin/bash')
 
     # for grace
-    # os.system('checkMesh -allGeometry -allTopology')
-
-    if not close:
-        if not os.path.exists('0/polyMesh'):
-            os.makedirs('0/polyMesh')
-        os.system('cp -r constant/polyMesh/points 0/polyMesh/points')
+    #
 
     os.chdir(initial_dir)
 
