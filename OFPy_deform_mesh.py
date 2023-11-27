@@ -33,15 +33,18 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     start = time.time()
     initial_dir = os.getcwd()
     if close:
-        print('Preparing mesh for ' + case_directory + '/closure')
+        print('Preparing mesh for ' + case_directory + '/conductivity')
+        # get polyMesh from etching folder.
+        last_timestep_dir = str(max([int(a) for a in os.listdir(case_directory + '/etching') if a.isnumeric()]))
+        print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+        orig_points_path = case_directory + '/etching/' + last_timestep_dir + '/polyMesh/points'
     else:
         print('Preparing mesh for ' + case_directory + '/etching')
+        orig_points_path = case_directory + '/etching/constant/polyMesh/points'
 
-    # close = True
+
     # read nx, ny, size from the input file
-    input_file_path = '/inp'
-
-    inp = m3d.read_input(case_directory + input_file_path)
+    inp = m3d.read_input(case_directory + '/inp')
 
     # calc some parameters from data in inp
     # number of grids
@@ -59,13 +62,11 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     hmin1 = inp["hmin1"]
     seed = inp["seed"]
 
-    if close:
-        # get polyMesh from etching folder.
-        last_timestep_dir = str(max([int(a) for a in os.listdir(case_directory + '/etching') if a.isnumeric()]))
-        print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
-        df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-        df_points['index_column'] = df_points.index
+    df_points = edit_polyMesh.read_OF_points(orig_points_path, nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    df_points['index_column'] = df_points.index
 
+
+    if close:
         # compute paramters independent to pc and write cond.json file
         zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
         wids = zs[:, :, -1] - zs[:, :, 0]
@@ -88,13 +89,11 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
             os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
             os.system(
                 "mkdir -p constant/polyMesh; "  # create directory if not exist
-                "cp -r ../etching/constant/polyMesh constant; "  # copy all mesh related files
-                "cp ../etching/" + last_timestep_dir + "/polyMesh/points constant/polyMesh/points")  # rewrite points only
+                "cp -r ../etching/constant/polyMesh constant; ")    # copy all mesh related files
 
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
-            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
+            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
-            os.system('checkMesh -allGeometry -allTopology')
 
     else:
         # run blockMesh and polyMesh
@@ -127,41 +126,21 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
         roughness = gsp.affine(sim_array[0], mean, stdev).T
 
-        df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-        df_points['index_column'] = df_points.index
-
         df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points,
                                                                roughness=roughness)  # roughness file is in [inch]
         edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
                                         df_points_deformed)  # write new mesh in constant/polyMesh/
         # finally, copy mesh to 0
-        if not os.path.exists('0/polyMesh'):
-            os.makedirs('0/polyMesh')
-        os.system('cp -r constant/polyMesh/points 0/polyMesh/points')
-        os.system('checkMesh -allGeometry -allTopology')
+        os.system('mkdir -p 0/polyMesh; cp -r constant/polyMesh/points 0/polyMesh/points')
 
-    end = time.time()
-    print("elapsed time: " + str(end - start) + " s")
-
-    # TODO: check mesh. If I'm not running it here, then where I run checkMesh?
-
+    print("Elapsed time: " + str(time.time() - start) + " s")
+    '''
     # for Lenovo linux
-    # if close:
-    #     sp2 = subprocess.Popen("source $WM_PROJECT_DIR/etc/bashrc;"
-    #                            ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
-    #                            " runApplication checkMesh -allGeometry -allTopology;"
-    #                            , shell=True, executable='/bin/bash')
-    # else:
-    #     sp2 = subprocess.Popen("source $WM_PROJECT_DIR/etc/bashrc;"
-    #                            ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
-    #                            " runApplication checkMesh -allGeometry -allTopology;"
-    #                            "mkdir 0/polyMesh;"
-    #                            "cp -r constant/polyMesh/points 0/polyMesh/points;"
-    #                            , shell=True, executable='/bin/bash')
-
-    # for grace
-    #
-
+    sp2 = subprocess.Popen("source $WM_PROJECT_DIR/etc/bashrc;"
+                           ". $WM_PROJECT_DIR/bin/tools/RunFunctions;"
+                           " runApplication checkMesh -allGeometry -allTopology;"
+                           , shell=True, executable='/bin/bash')
+    '''
     os.chdir(initial_dir)
 
 

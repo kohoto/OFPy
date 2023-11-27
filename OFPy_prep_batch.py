@@ -19,7 +19,7 @@ def prep_batch(batch_directory, start_proj_name):
     :param start_proj_name: path to the template project directory.
     :return: a set of the OF projects ready to run.
     """
-    cond_list = ['conductivity' + str(pc * 1000) for pc in list(range(1, 5))]
+    cond_list = ['conductivity' + str(pc * 1000) for pc in list(range(5))]
     cases = ['etching'] + cond_list
     # get polyMesh from etching folder.
     os.chdir(batch_directory)
