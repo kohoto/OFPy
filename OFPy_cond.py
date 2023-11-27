@@ -36,7 +36,7 @@ def calc_cond(case_directory):
     cond_dict  = {}
     for pc in range(1000, 5000, 1000):
         cond_directory = '/conductivity' + str(pc)
-
+        print('Calculating conductivity of pc = ' + str(pc))
         df_points = edit_polyMesh.read_OF_points(case_directory + cond_directory + "/constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
 
         q = read_out(case_directory + cond_directory + '/q.out')
