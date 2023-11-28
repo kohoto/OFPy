@@ -21,6 +21,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     """
     if roughness is None:
        close = True
+       youngs_modulus = 1e6  # psi
     else:
         close = False
         roughness *= 0.0254
@@ -43,41 +44,31 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
 
     wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
-
     if close:
-        youngs_modulus = 1e6  # psi
-        load = 48 * pc  # N
-
-        wids_by_col = np.sum(wids, axis=1) / (ny + 1) # average width of each column
+        print("working on pc = " + str(pc) + ", average width of original opening is " + str(np.average(wids)))
+        wids_by_col = np.sum(wids, axis=1) / (ny + 1)  # average width of each column
         wids_by_col -= np.min(wids_by_col)  # getting waviness
         wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
 
         min_disp = np.min(wids)
-        max_disp = np.max(wids)
         wid_threshold = 0.01 * min_disp  # put it here so that threshold won't change with min_disp
 
-        disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, load),
-                                      bounds=(np.min(wids), np.max(wids)), tol=1e-6, method='bounded')
-        #disp_col.append(disp.x)
-        print(disp)
-        # calculate wids distribution when the min wid point touched
-        # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
-        # min_width = 0.99 * np.min(abs(wids), axis=1)  # search min openings along y axis at each x-coord
-        # wids -= np.tile(min_width, (ny+1, 1)).T
+        if pc > 0:
+            disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, 48 * pc),  # load in N
+                                          bounds=(np.min(wids), np.max(wids)), tol=1e-6, method='bounded')
+            print(disp)
+            # get new width
+            wids = (wids - disp.x) * ((wids - disp.x) > wid_threshold) + wid_threshold * ((wids - disp.x) <= wid_threshold)
 
-        # shift top surface according to the disp solution
-
-        # top_surface_disp = 0.5 * (disp * ((wids - disp) > wid_threshold)  # surface that doesn't tough to be shifted with constant disp value
-        #                           + (wids - wid_threshold) * ((wids - disp) <= wid_threshold))  # surface that touches shift until 0.5 * 0.01 * min_disp above from center
-        # is_mountain = ((wids - disp) <= wid_threshold) * (zs[:, :, -1] == np.min(top_w_edge))
-
-        # get new width
-        wids = (wids - disp.x) * ((wids - disp.x) > wid_threshold) + wid_threshold * ((wids - disp.x) <= wid_threshold)
+        else:
+            # calculate wids distribution when the min wid point touched
+            # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
+            wids -= np.tile(0.99 * min_disp, (ny+1, 1)).T
 
         if platform.system() == 'Windows':
             # show the contour of fracture opening
             # np.where... is not to show the closed points in plot
-            fig = make_subplots(rows=2, cols=1)
+            fig = make_subplots(rows=2, cols=1, )
 
             fig.add_trace(
                 go.Heatmap(z=np.where(wids.T == wid_threshold, np.nan, wids.T), connectgaps=False, dx=dx, dy=dy),
@@ -131,7 +122,7 @@ if __name__ == "__main__":
     import os
     import edit_polyMesh
 
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/seed2000-stdev0_05/lambda3_0-0_5-stdev0_05'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
 
     # read nx, ny, size from the input file
     input_file_path = '/inp'
@@ -150,7 +141,9 @@ if __name__ == "__main__":
                                              nrows=(nx + 1) * (ny + 1) * (nz + 1))
     df_points['index_column'] = df_points.index
 
+    pcs = [pc * 1000 for pc in list(range(5))]
+    for pc in pcs:
+        zzs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+        print("avg width of original opening: " + str(np.average(zzs[:, :, -1] - zzs[:, :, 0])))
 
-    deform_blockMesh(inp, df_points, roughness=None, pc=4000)
-
-
+        deform_blockMesh(inp, df_points.copy(), roughness=None, pc=pc)

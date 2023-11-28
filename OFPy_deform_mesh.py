@@ -91,7 +91,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
                 "mkdir -p constant/polyMesh; "  # create directory if not exist
                 "cp -r ../etching/constant/polyMesh constant; ")    # copy all mesh related files
 
-            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points, pc=pc)
+            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(), pc=pc)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
 
@@ -126,7 +126,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
         roughness = gsp.affine(sim_array[0], mean, stdev).T
 
-        df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points,
+        df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(),
                                                                roughness=roughness)  # roughness file is in [inch]
         edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
                                         df_points_deformed)  # write new mesh in constant/polyMesh/
