@@ -21,7 +21,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     """
     if roughness is None:
        close = True
-       youngs_modulus = 1e6  # psi
+       youngs_modulus = 2.9e6  # psi
     else:
         close = False
         roughness *= 0.0254
@@ -54,7 +54,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         wid_threshold = 0.01 * min_disp  # put it here so that threshold won't change with min_disp
 
         if pc > 0:
-            disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, 48 * pc),  # load in N
+            disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, pc * 6894.76 * dx * dy),  # load in N
                                           bounds=(np.min(wids), np.max(wids)), tol=1e-6, method='bounded')
             print(disp)
             # get new width
