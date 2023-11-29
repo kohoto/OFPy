@@ -34,7 +34,8 @@ def calc_cond(case_directory):
     dy = ly / ny
 
     cond_dict  = {}
-    for pc in range(5000, 1000):
+    pcs = [pc * 1000 for pc in list(range(5))]
+    for pc in pcs:
         cond_directory = '/conductivity' + str(pc)
         print('Calculating conductivity of pc = ' + str(pc))
         df_points = edit_polyMesh.read_OF_points(case_directory + cond_directory + "/constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
@@ -103,5 +104,6 @@ def read_out(fpath):
 
 if __name__ == "__main__":
     # case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_15\lambda1_0-0_5-stdev0_15'
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
+    # case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
     calc_cond(case_directory)
