@@ -51,24 +51,26 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
 
         min_disp = np.min(wids)
-        wid_threshold = 0.01 * min_disp  # put it here so that threshold won't change with min_disp
+        thres_ratio = 0.001
+        wid_threshold = thres_ratio * min_disp  # put it here so that threshold won't change with min_disp
 
         if pc > 0:
-            disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - np.min(wids), youngs_modulus, dx, dy, pc * 6894.76 * lx * ly),  # load in N
-                                          bounds=(np.min(wids), np.max(wids)), tol=1e-6, method='bounded')
+            disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - min_disp, youngs_modulus, dx, dy, pc * 6894.76 * lx * ly),  # load in N
+                                          bounds=(min_disp, np.max(wids)), tol=1e-6, method='bounded')
             print(disp)
             # get new width
             wids = (wids - disp.x) * ((wids - disp.x) > wid_threshold) + wid_threshold * ((wids - disp.x) <= wid_threshold)
+            print('Conductivity of the width threshold = ' + str(wid_threshold * wid_threshold * wid_threshold / 12 * 1.0133e15 * 3.28084) + ' md-ft')
 
         else:
             # calculate wids distribution when the min wid point touched
             # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
-            wids -= np.tile(0.99 * min_disp, (ny+1, 1)).T
+            wids -= np.tile(min_disp - wid_threshold, (ny+1, 1)).T
 
         if platform.system() == 'Windows':
             # show the contour of fracture opening
             # np.where... is not to show the closed points in plot
-            fig = make_subplots(rows=2, cols=1, )
+            fig = make_subplots(rows=2, cols=1)
 
             fig.add_trace(
                 go.Heatmap(z=np.where(wids.T == wid_threshold, np.nan, wids.T), connectgaps=False, dx=dx, dy=dy),
@@ -76,7 +78,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
             )
             fig.update_yaxes(anchor="x")
             # plot CDF of the wids dist
-            hist, bin_edges = np.histogram(np.where(wids.T == 0.01 * min_disp, 0.0, wids.T), bins=100, density=True)
+            hist, bin_edges = np.histogram(np.where(wids.T == wid_threshold, 0.0, wids.T), bins=100, density=True)
             cdf = np.cumsum(hist * np.diff(bin_edges))
             fig.add_trace(
                 go.Scatter(x=bin_edges, y=cdf, name='CDF'),
