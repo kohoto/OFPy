@@ -21,7 +21,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     """
     if roughness is None:
        close = True
-       youngs_modulus = 2.9e6  # psi - I took this value from my compression test in geology lab
+       youngs_modulus = 2.1e6  # psi - I took this value from my compression test in geology lab
     else:
         close = False
         roughness *= 0.0254
@@ -46,9 +46,10 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
     if close:
         print("working on pc = " + str(pc) + ", average width of original opening is " + str(np.average(wids)))
-        wids_by_col = np.sum(wids, axis=1) / (ny + 1)  # average width of each column
-        wids_by_col -= np.min(wids_by_col)  # getting waviness
-        wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
+        if np.min(wids) > lz:
+            wids_by_col = np.sum(wids, axis=1) / (ny + 1)  # average width of each column
+            wids_by_col -= np.min(wids_by_col)  # getting waviness
+            wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
 
         min_disp = np.min(wids)
         thres_ratio = 0.001
@@ -61,11 +62,11 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
             # get new width
             wids = (wids - disp.x) * ((wids - disp.x) > wid_threshold) + wid_threshold * ((wids - disp.x) <= wid_threshold)
             print('Conductivity of the width threshold = ' + str(wid_threshold * wid_threshold * wid_threshold / 12 * 1.0133e15 * 3.28084) + ' md-ft')
-
+            print('Conductivity of the width avg = ' + str(np.average(wids) * np.average(wids) *np.average(wids) / 12 * 1.0133e15 * 3.28084) + ' md-ft')
         else:
             # calculate wids distribution when the min wid point touched
             # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
-            wids -= np.tile(min_disp - wid_threshold, (ny+1, 1)).T
+            wids = (wids - min_disp) * ((wids - min_disp) > wid_threshold) + wid_threshold * ((wids - min_disp) <= wid_threshold)
 
         if platform.system() == 'Windows':
             # show the contour of fracture opening
@@ -124,8 +125,8 @@ if __name__ == "__main__":
     import os
     import edit_polyMesh
 
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
-
+    # case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
     # read nx, ny, size from the input file
     input_file_path = '/inp'
 

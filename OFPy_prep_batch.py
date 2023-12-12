@@ -44,7 +44,8 @@ def prep_batch(batch_directory, start_proj_name):
             cmd = ['mkdir' + new_case_dir + command_separator,
                    'mkdir -p ' + new_case_dir + '/constant' + command_separator,
                    'cp -rp ' + start_case_dir + '/constant/* ' + new_case_dir + '/constant/' + command_separator, # copy constant (cause polyMesh is unique)
-                   'cp -rp ' + start_case_dir + '/Zero ' + new_case_dir + '/0' + command_separator,             # hard copy 0 files (will be rewritten by OF simulation)
+                   'mkdir -p ' + new_case_dir + '/0' + command_separator,
+                   'cp -rp ' + start_case_dir + '/Zero/* ' + new_case_dir + '/0/' + command_separator,             # hard copy 0 files (will be rewritten by OF simulation)
                    # remove constant except polyMesh & add symbolic links in constant except polyMesh
                    'rm ' + new_case_dir + '/constant/transportProperties' + command_separator,
                    'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir + '/constant/transportProperties' + command_separator,
