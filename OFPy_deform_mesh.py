@@ -23,7 +23,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     Preprocess for etching simulation, add deform the frac surface using 'roguhenss' output file.
     Preprocess for conductivity simulation, we deform the frac surface points from the fracture closure calculation.
 
-    :param case_directory:
+    :param case_directory: must be a full path
     :type  case_directory: str
     :param close:
     :type  close: bool
@@ -146,11 +146,12 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
 # close a fracture for the all projects in 'batch_directory' all at once.
 if __name__ == "__main__":
-    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
+    # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy'
+    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
     # get polyMesh from etching folder.
     os.chdir(dissolCases_dir)
-    dir_list = os.listdir(dissolCases_dir)
+    dir_list = next(os.walk('.'))[1]
 
     # run case
     for proj in dir_list:
-        prep_case(proj, close=True)
+        prep_case(dissolCases_dir + '/' + proj, close=True)
