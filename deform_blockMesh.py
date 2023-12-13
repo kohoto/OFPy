@@ -52,8 +52,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
             wids -= (np.ones((ny + 1, nx + 1)) * wids_by_col).T
 
         min_disp = np.min(wids)
-        thres_ratio = 0.001
-        wid_threshold = thres_ratio * min_disp  # put it here so that threshold won't change with min_disp
+        wid_threshold = 3.28914e-6  # this is to get 0.1 md-ft
 
         if pc > 0:
             disp = sp.optimize.minimize_scalar(f, args=(wids, np.max(wids) - min_disp, youngs_modulus, dx, dy, pc * 6894.76 * lx * ly),  # load in N
@@ -91,6 +90,9 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
         zs[:, :, -1] += roughness
 
     # getting internal points z coordinates
+    #TODO: need to do something for zs[:, :, -1]
+
+
     for i in range(nz+1):
         zs[:, :, i] = zs[:, :, -1] - wids * ratios[i]
 
