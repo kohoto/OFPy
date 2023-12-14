@@ -42,13 +42,15 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     ratios = np.arange(1, - 1/nz, -1/nz)
 
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
-    zs -= np.max(zs) # make the z coordinate of the highest point 0.
-
-    wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
-    ref_top = 0
-    ref_btm = -np.max(wids)
 
     if close:
+        zs -= np.max(zs)  # make the z coordinate of the highest point 0.
+
+        wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
+        ref_top = 0
+        ref_btm = np.min(zs[:, :, 0])
+        top_ratio = (ref_top - zs[:, :, -1]) / ((ref_top - zs[:, :, -1]) + (zs[:, :, 0] - ref_btm))
+
         print("working on pc = " + str(pc) + ", average width of original opening is " + str(np.average(wids)))
         if np.min(wids) > lz:
             wids_by_col = np.sum(wids, axis=1) / (ny + 1)  # average width of each column
@@ -68,13 +70,15 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
             # NOTE: though this point should have 0 wids, to make CFD work, we keep 1% of its original wids
             disp = min_disp
 
-        print('Conductivity of the width threshold = ' + str(wid_threshold * wid_threshold * wid_threshold / 12 * 1.0133e15 * 3.28084) + ' md-ft')
-        print('Conductivity of the width avg = ' + str(np.average(wids) * np.average(wids) *np.average(wids) / 12 * 1.0133e15 * 3.28084) + ' md-ft')
+
         wids = (wids - disp) * ((wids - disp) > wid_threshold) + wid_threshold * ((wids - disp) <= wid_threshold)
 
+        print('Conductivity of the width threshold = ' + str(wid_threshold * wid_threshold * wid_threshold / 12 * 1.0133e15 * 3.28084) + ' md-ft')
+        print('Conductivity of the width avg = ' + str(np.average(wids) * np.average(wids) *np.average(wids) / 12 * 1.0133e15 * 3.28084) + ' md-ft')
+
         # new location of the top surface for those grids that are contacting
-        top_ratio = (ref_top - zs[:, :, -1]) / (ref_top - ref_btm)
-        zs[:, :, -1] = (wids == wid_threshold) * (-(ref_top - ref_btm - disp) * top_ratio)
+
+        zs[:, :, -1] = (wids != wid_threshold) * zs[:, :, -1] + (wids == wid_threshold) * (-(ref_top - ref_btm - disp) * top_ratio)
         if platform.system() == 'Windows':
             # show the contour of fracture opening
             # np.where... is not to show the closed points in plot
@@ -132,8 +136,8 @@ if __name__ == "__main__":
     import os
     import edit_polyMesh
 
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
-    # case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
+    # case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
     # read nx, ny, size from the input file
     input_file_path = '/inp'
 
