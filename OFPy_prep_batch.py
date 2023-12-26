@@ -41,7 +41,7 @@ def prep_batch(batch_directory, start_proj_name):
 
             new_case_dir = new_proj_name + '/' + case
 
-            cmd = ['mkdir' + new_case_dir + command_separator,
+            cmd = ['mkdir ' + new_case_dir + command_separator,
                    'mkdir -p ' + new_case_dir + '/constant' + command_separator,
                    'cp -rp ' + start_case_dir + '/constant/* ' + new_case_dir + '/constant/' + command_separator, # copy constant (cause polyMesh is unique)
                    'mkdir -p ' + new_case_dir + '/0' + command_separator,
