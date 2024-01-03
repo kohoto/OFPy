@@ -15,6 +15,12 @@ else:
     from . import edit_polyMesh
     from . import deform_blockMesh
 
+if platform.system() == 'Windows':
+    import OFPy_deform_mesh
+    command_separator = '&'
+else:
+    from . import OFPy_deform_mesh
+    command_separator = ';'
 
 def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     """
@@ -102,26 +108,26 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         # print("Run dissolFoam case at {0}".format(os.getcwd()))
 
         # rewrite system/blockMeshDict
-        blockMeshDict = "system/blockMeshDict"
-        blockMeshDict_new = "system/blockMeshDict_new"
-        with open(blockMeshDict, "r") as f, open(blockMeshDict_new, "w+") as f_new:
-            lines = []
-            while True:
-                lines.append(f.readline())
-                if not lines[-1]:
-                    break
-                if 'blocks' in lines[-1].split():
-                    lines.append(f.readline())  # read "("
-                    blocks = f.readline()
-                    pha = [i for i, letter in enumerate(blocks) if letter == '('][1]  # find the second (
-                    pha2 = [i for i, letter in enumerate(blocks) if letter == ')'][1]  # find the second )
-                    blocks = blocks[:pha + 1] + str(nx) + " " + str(ny) + " " + str(nz) + blocks[
-                                                                                          pha2:]  # rewrite number of cells in each dir
-                    lines.append(blocks)
-
-            f_new.writelines(lines)
-
-        os.system("rm " + blockMeshDict + "; mv " + blockMeshDict_new + " " + blockMeshDict)
+        # blockMeshDict = "system/blockMeshDict"
+        # blockMeshDict_new = "system/blockMeshDict_new"
+        # with open(blockMeshDict, "r") as f, open(blockMeshDict_new, "w+") as f_new:
+        #     lines = []
+        #     while True:
+        #         lines.append(f.readline())
+        #         if not lines[-1]:
+        #             break
+        #         if 'blocks' in lines[-1].split():
+        #             lines.append(f.readline())  # read "("
+        #             blocks = f.readline()
+        #             pha = [i for i, letter in enumerate(blocks) if letter == '('][1]  # find the second (
+        #             pha2 = [i for i, letter in enumerate(blocks) if letter == ')'][1]  # find the second )
+        #             blocks = blocks[:pha + 1] + str(nx) + " " + str(ny) + " " + str(nz) + blocks[
+        #                                                                                   pha2:]  # rewrite number of cells in each dir
+        #             lines.append(blocks)
+        #
+        #     f_new.writelines(lines)
+        #
+        # os.system("rm " + blockMeshDict + "; mv " + blockMeshDict_new + " " + blockMeshDict)
 
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
         roughness = gsp.affine(sim_array[0], mean, stdev).T
@@ -131,7 +137,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
         edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed),
                                         df_points_deformed)  # write new mesh in constant/polyMesh/
         # finally, copy mesh to 0
-        os.system('mkdir -p 0/polyMesh; cp -r constant/polyMesh/points 0/polyMesh/points')
+        os.system('mkdir -p 0/polyMesh' + command_separator + 'cp -r constant/polyMesh/points 0/polyMesh/points')
 
     print("Elapsed time: " + str(time.time() - start) + " s")
     '''
@@ -146,12 +152,12 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
 # close a fracture for the all projects in 'batch_directory' all at once.
 if __name__ == "__main__":
-    # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy'
-    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
+    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
+    # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
     # get polyMesh from etching folder.
     os.chdir(dissolCases_dir)
     dir_list = next(os.walk('.'))[1]
 
     # run case
     for proj in dir_list:
-        prep_case(dissolCases_dir + '/' + proj, close=True)
+        prep_case(dissolCases_dir + '/' + proj, close=False)

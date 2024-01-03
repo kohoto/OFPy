@@ -42,11 +42,12 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     ratios = np.arange(1, - 1/nz, -1/nz)
 
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
+    wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
+
 
     if close:
         zs -= np.max(zs)  # make the z coordinate of the highest point 0.
 
-        wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
         ref_top = 0
         ref_btm = np.min(zs[:, :, 0])
         top_ratio = (ref_top - zs[:, :, -1]) / ((ref_top - zs[:, :, -1]) + (zs[:, :, 0] - ref_btm))

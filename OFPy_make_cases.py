@@ -56,10 +56,9 @@ def make_roughness(case_name):
     """
     inp = m3d.read_input(case_name + '/inp')
 
-    # number of grids
-    lx = inp["lx"] * 0.0254
-    ly = inp["ly"] * 0.0254
-    lz = inp["lz"] * 0.0254
+    # inputs (keep everything in inches)
+    lx = inp["lx"]
+    ly = inp["ly"]
     nx = inp["nx"]
     ny = inp["ny"]
     dx = inp["dx"]
@@ -73,7 +72,7 @@ def make_roughness(case_name):
     # Make a truth model / unconditional simulation
     var = gsp.make_variogram(nug=0.0, nst=1, it1=1, cc1=1.0, azi1=90.0, hmaj1=hmaj1, hmin1=hmin1)
     # write a width distribution on 'roughness' file
-    width = gsp.GSLIB_sgsim_2d_uncond(1, nx, ny, dx, seed + 3, var, 'roughness')
+    width = gsp.GSLIB_sgsim_2d_uncond(1, nx + 1, ny + 1, dx, seed + 3, var, 'roughness')
 
     # copy input files in the project directory for reference
     shutil.copyfile('GsPy3DModel/sgsim.par', case_name + '/sgsim.par')
@@ -105,7 +104,7 @@ def make_roughness(case_name):
 if __name__ == "__main__":
     inp_seed = 6000
     # use a single standard deviation (but make it into an array just for np.meshgrid)
-    inp_stdev = np.array([0.05])
+    inp_stdev = np.array([0.025])
 
     # 21 combinations of lambda_x, lambda_y
     make_case(lx=7.0, ly=1.7, lz=0.1,
