@@ -31,11 +31,12 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
     stdev = inp["stdev"]
 
     # input array must be nx * ny (280 * 68)
-    mineralogy_dist = 'pathchy'
+    mineralogy_dist = 'rough'
     if mineralogy_dist == 'rough':
         os.chdir(project_directory + "/etching")
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
-        mineralogy = gsp.affine(sim_array[0], mean, stdev).T < 0
+        mineralogy = (gsp.affine(sim_array[0], mean, stdev).T < 0.05).astype(int)
+        mineralogy = mineralogy[:-1, :-1]
     elif mineralogy_dist == 'pathchy':
         # create array
         # add patchy distribution of insoluble minerals
@@ -53,16 +54,27 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
 
     # mineralogy = mineralogy[:-1, :-1]
     #TODO: I still need to fix the file by hand. Need to write a code for field file.
-    str_list = write.write_OF_dictionary(cls="dictionary",
-                                         loc="constant",
-                                         obj="rockProperties",
+    str_list = write.write_OF_dictionary(cls="surfaceScalarField",
+                                         loc="0",
+                                         obj="mineralogy",
                                          dict={"internalField": 0,
-                                               "boundaryField": {"solubleWall": mineralogy.flatten().tolist(),
-                                                                 "solubleWall_mirrored": mineralogy.flatten().tolist(),
-                                                                 "inlet": 0,
-                                                                 "outlet": 0,
-                                                                 "insolubleY": 0}})
-    write.write_file(str_list, project_directory + '/etching/constant/rockProperties')
+                                               "boundaryField": {
+                                                   "solubleWall": {
+                                                       "type": "fixedValue",
+                                                       "value": mineralogy.flatten().tolist()},
+                                                   "solubleWall_mirrored": {
+                                                       "type": "fixedValue",
+                                                       "value": mineralogy.flatten().tolist()},
+                                                   "inlet": {
+                                                       "type": "fixedValue",
+                                                       "value": 0},
+                                                   "outlet": {
+                                                       "type": "fixedValue",
+                                                       "value": 0},
+                                                   "insolubleY": {
+                                                       "type": "fixedValue",
+                                                       "value": 0}}})
+    write.write_file(str_list, project_directory + '/etching/constant/mineralogy')
 
 
 if __name__ == '__main__':
