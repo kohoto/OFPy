@@ -53,7 +53,7 @@ def calc_cond(case_directory):
         inlet_area = np.sum(wids[0, :]) * dy  # get width at inlet
 
         avg_w = np.mean(wids)
-        min_w = 0.01 * np.min(wids)
+        min_w = np.min(wids)
         avg_w_nonzero = np.mean(wids[wids > min_w])
 
 
@@ -104,6 +104,6 @@ def read_out(fpath):
 
 if __name__ == "__main__":
     # case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_15\lambda1_0-0_5-stdev0_15'
-    # case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
-    case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
+    case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
+    # case_directory = 'C:/Users/tohoko.tj/dissolCases/temp2000/lambda5_0-1_0-stdev0_075'
     calc_cond(case_directory)
