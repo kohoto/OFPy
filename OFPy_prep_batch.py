@@ -31,7 +31,7 @@ def prep_batch(batch_directory, dissolCases_dir):
     cmd = ['ln -s  ' + start_proj_name + '/EtchingBatch.sbatch ' + batch_directory + command_separator,
            'ln -s  ' + OFPy_batch_dir + '/All.sbatch ' + batch_directory + command_separator,
            'ln -s  ' + OFPy_batch_dir + '/All_small.sbatch ' + batch_directory + command_separator,
-           'ln -s  ' + OFPy_batch_dir + '/ClosureCondBatch.sbatch ' + batch_directory + command_separator, ]
+           'ln -s  ' + OFPy_batch_dir + '/ClosureCondBatch.sbatch ' + batch_directory + command_separator]
     os.system(''.join(cmd))
 
     # copy cases
