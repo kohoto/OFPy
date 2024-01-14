@@ -19,7 +19,7 @@ def make_case(lx, ly, lz, cellsize, nz, lambda_xs, lambda_ys, stdevs, seed):
     Variance will be the same for all.
     :return: 'roughness' output file
     """
-    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + str(seed)\
+    dissolCases_directory = 'C:/Users/tohoko.tj/dissolCases/seed' + "{:04d}".format(seed)\
                             + '-stdev' + str(stdevs[0]).replace('.', '_') + '/'
     if not os.path.exists(dissolCases_directory):
         os.mkdir(dissolCases_directory)
@@ -102,13 +102,25 @@ def make_roughness(case_name):
 
 
 if __name__ == "__main__":
-    inp_seed = 6000
-    # use a single standard deviation (but make it into an array just for np.meshgrid)
-    inp_stdev = np.array([0.025])
+    # inp_seed = 6000
+    # # use a single standard deviation (but make it into an array just for np.meshgrid)
+    # inp_stdev = np.array([0.1])
+    #
+    # # 21 combinations of lambda_x, lambda_y
+    # make_case(lx=7.0, ly=1.7, lz=0.1,
+    #           cellsize=0.025, nz=10,
+    #           lambda_xs=np.round(np.arange(1.0, 6.1, 1.0), 3),
+    #           lambda_ys=np.round(np.arange(0.5, 1.51, 0.5), 3),
+    #           stdevs=inp_stdev, seed=inp_seed)
 
-    # 21 combinations of lambda_x, lambda_y
-    make_case(lx=7.0, ly=1.7, lz=0.1,
-              cellsize=0.025, nz=10,
-              lambda_xs=np.round(np.arange(1.0, 6.1, 1.0), 3),
-              lambda_ys=np.round(np.arange(0.5, 1.51, 0.5), 3),
-              stdevs=inp_stdev, seed=inp_seed)
+    # for different seeds with the same statistical parameters
+    for inp_seed in range(100, 2000, 100):
+        # use a single standard deviation (but make it into an array just for np.meshgrid)
+        inp_stdev = np.array([0.1])
+
+        # 1 combinations of lambda_x, lambda_y
+        make_case(lx=7.0, ly=1.7, lz=0.1,
+                  cellsize=0.025, nz=10,
+                  lambda_xs=np.round(np.arange(1.0, 2.0, 1.0), 3),
+                  lambda_ys=np.round(np.arange(1.0, 2.0, 1.0), 3),
+                  stdevs=inp_stdev, seed=inp_seed)

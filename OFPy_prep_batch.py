@@ -10,13 +10,13 @@ else:
 
 # For Linux and Windows (no OF commands), but prefered to run on Linux since chmod and need to transfer more files
 
-def prep_batch(batch_directory, start_proj_name):
+def prep_batch(batch_directory, dissolCases_dir):
     """
     Use after OFPy_make_case.py.
     Create 'etching' and 'conductivity' directories.
     Copy OF input files from start_proj to each project directory in batch_directory.
     :param batch_directory: path to the directory you desire to copy OF input files from.
-    :param start_proj_name: path to the template project directory.
+    :param dissolCases_dir: path to the parent "dissolCases" directory.
     :return: a set of the OF projects ready to run.
     """
     cond_list = ['conductivity' + str(pc * 1000) for pc in list(range(5))]
@@ -25,9 +25,13 @@ def prep_batch(batch_directory, start_proj_name):
     os.chdir(batch_directory)
     dir_list = os.listdir(batch_directory)
     dir_list = [d for d in dir_list if os.path.isdir(os.path.join(batch_directory, d))]
-
+    start_proj_name = dissolCases_dir + '/start_proj'
+    OFPy_batch_dir = dissolCases_dir + '/OFPy_batch'
     # sbatch files
-    cmd = ['ln -s  ' + start_proj_name + '/EtchingBatch.sbatch ' + batch_directory + command_separator]
+    cmd = ['ln -s  ' + start_proj_name + '/EtchingBatch.sbatch ' + batch_directory + command_separator,
+           'ln -s  ' + OFPy_batch_dir + '/All.sbatch ' + batch_directory + command_separator,
+           'ln -s  ' + OFPy_batch_dir + '/All_small.sbatch ' + batch_directory + command_separator,
+           'ln -s  ' + OFPy_batch_dir + '/ClosureCondBatch.sbatch ' + batch_directory + command_separator, ]
     os.system(''.join(cmd))
 
     # copy cases
@@ -81,8 +85,8 @@ def prep_batch(batch_directory, start_proj_name):
 
 
 if __name__ == '__main__':
-    batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_05'
-    start_proj_name = 'C:/Users/tohoko.tj/dissolCases/start_proj'
+    batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
+    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases'
 
-    prep_batch(batch_dir, start_proj_name)
+    prep_batch(batch_dir, dissolCases_dir)
 
