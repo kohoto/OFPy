@@ -20,27 +20,47 @@ for i = 1:numel(fields)
     end
 
     % store color and size parameters
-    colors(i, 1) = case_data.(colored_by);
-    marker_sizes(i)  = case_data.(sized_by);
+    if isnumeric(colored_by)
+        colors(i, :) = colored_by;
+    else
+        if isfield(case_data, colored_by)
+            colors(i, 1) = case_data.(colored_by);
+        end
+    end
+
+    if isfield(case_data, sized_by)
+        marker_sizes(i)  = case_data.(sized_by);
+    end
 
 end
 
 %% determine color and size of the markers
-unique_colors = unique(colors(:,1));
-max_color = max(unique_colors);
-min_color = min(unique_colors);
-max_size = max(marker_sizes);
-min_size = min(marker_sizes);
-
-if unique_colors <= size(cc, 1)
-    for i = 1:numel(fields)
-        [~, idx] = find(colors(i, 1) == unique_colors,1);
-        colors(i, :) = cc(idx, :);
+if any(isnan(colors(:, 3)))  % if the colors are not determined,
+    unique_colors = unique(colors(:,1));
+    max_color = max(unique_colors);
+    min_color = min(unique_colors);
+    if unique_colors <= size(cc, 1)
+        for i = 1:numel(fields)
+            [~, idx] = find(colors(i, 1) == unique_colors,1);
+            colors(i, :) = cc(idx, :);
+        end
+    else % if the value is more than the number of colors, or the value is continuous, use gray scale
+        colors = repmat((colors(:, 1)-min_color) ./ (max_color - min_color), 1, 3);
     end
-else % if the value is more than the number of colors, or the value is continuous, use gray scale
-    colors = repmat((colors(:, 1)-min_color) ./ (max_color - min_color), 1, 3);
 end
 
 % assume the marker size is always continuous paramter
-marker_sizes = 2 + 10 .* (marker_sizes - min_size) ./ (max_size - min_size);
+max_size = max(marker_sizes);
+min_size = min(marker_sizes);
+marker_sizes = 5 + 10 .* (marker_sizes - min_size) ./ (max_size - min_size);
+% assign small value to the data points that doesn't have marker size
+% paramters
+marker_sizes(isnan(marker_sizes)) = 2;
+
+% remove data points that has invalid numbers
+valid_idx = all(~isnan(cond) & ~isinf(cond), 2);
+cond = cond(valid_idx, :);
+marker_sizes = marker_sizes(valid_idx);
+colors = colors(valid_idx, :);
+disp_names = disp_names(valid_idx);
 

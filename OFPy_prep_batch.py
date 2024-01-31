@@ -85,8 +85,9 @@ def prep_batch(batch_directory, dissolCases_dir):
 
 
 if __name__ == '__main__':
-    batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
-    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases'
-
+    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
+    # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases'
+    batch_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed6000-stdev0_1'
+    dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2'
     prep_batch(batch_dir, dissolCases_dir)
 

@@ -3,6 +3,8 @@ import json
 import pandas as pd
 import platform
 
+from GsPy3DModel import geostatspy as gsp
+
 if platform.system() == 'Windows':
     import OFPy_load_json
 else:
@@ -53,8 +55,8 @@ def generate_variogram(inp, zs):
                       columns=['X', 'Y', 'Z'])
 
     # Plot variogram in horizontal direction
-    lag_x, gamma_x, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=nx, lagdist=dx, azi=90, atol=2.0, bstand=1)
-    lag_y, gamma_y, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=ny, lagdist=dy, azi=0, atol=2.0, bstand=1)
+    lag_x, gamma_x, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=int(nx / 4), lagdist=4 * dx, azi=90, atol=2.0, bstand=1)
+    lag_y, gamma_y, por_npair = gsp.gamv_2d(df, "X", "Y", "Z", nlag=int(ny / 4), lagdist=4 * dy, azi=0, atol=2.0, bstand=1)
 
     # Ask user to input correlation length from lag distance plot.
     # hmaj1 = input("Enter correlation length in x [in]:")

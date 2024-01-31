@@ -15,7 +15,7 @@ dataStruct = struct();
 for i = 1 : length(batches)
     batchName = ['seed', sprintf('%04d', batches(i)), '-stdev', strrep(num2str(stdev), '.', '_')];
     % Get a list of all files and folders in this directory
-    dataStruct = store_batch_json(dataStruct, file_name, seedDir, batchName);
+    dataStruct = store_batch_json(dataStruct, file_name, cases_meet_condition);
 end
 
 [cond_simu, pc, marker_sizes, colors, disp_names] = store_cond_var_from_struct(dataStruct, 'cond__mdft');

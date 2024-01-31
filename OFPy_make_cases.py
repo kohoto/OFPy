@@ -81,24 +81,24 @@ def make_roughness(case_name):
     # since we have output file ('roughness'), the output array is used just for plotting.
     width = gsp.affine(width, mean, stdev)  #TODO: how does stdev work? I don't need this, since it's dealt later.
     decimal.getcontext().prec = 1
-    gsp.pixelplt(width, 0, lx + dx, 0, ly + dx, dx, -0.5, 0.5,
-                 '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
-
-    # show historam of prior distribution
-    fig, axs = plt.subplots(figsize=(7.5, 5))
-    count, bins, ignored = axs.hist(width.flatten(), 30)
-    a = np.sqrt(np.sum(width * width) / len(width.flatten()))
-    axs.axvline(a, color=(240.0/256, 130.0/256, 33.0/256), linewidth=1.5)
-    axs.axvline(-a, color=(240.0 / 256, 130.0 / 256, 33.0 / 256), linewidth=1.5)
-    axs.axvline(0, color='k', linewidth=1.5)
-    axs.set_ylim([0, 2500])
-    axs.set_xlim([-0.3, 0.3])
-    for tick in axs.get_xticklabels():
-        tick.set_fontname("Segoe UI")
-    for tick in axs.get_yticklabels():
-        tick.set_fontname("Segoe UI")
-    fig.tight_layout()
-    plt.show()
+    # gsp.pixelplt(width, 0, lx + dx, 0, ly + dx, dx, -0.5, 0.5,
+    #              '', 'x [in]', 'y [in]', 'height', plt.cm.jet, case_name)
+    #
+    # # show historam of prior distribution
+    # fig, axs = plt.subplots(figsize=(7.5, 5))
+    # count, bins, ignored = axs.hist(width.flatten(), 30)
+    # a = np.sqrt(np.sum(width * width) / len(width.flatten()))
+    # axs.axvline(a, color=(240.0/256, 130.0/256, 33.0/256), linewidth=1.5)
+    # axs.axvline(-a, color=(240.0 / 256, 130.0 / 256, 33.0 / 256), linewidth=1.5)
+    # axs.axvline(0, color='k', linewidth=1.5)
+    # axs.set_ylim([0, 2500])
+    # axs.set_xlim([-0.3, 0.3])
+    # for tick in axs.get_xticklabels():
+    #     tick.set_fontname("Segoe UI")
+    # for tick in axs.get_yticklabels():
+    #     tick.set_fontname("Segoe UI")
+    # fig.tight_layout()
+    # plt.show()
 
 
 if __name__ == "__main__":
@@ -113,14 +113,14 @@ if __name__ == "__main__":
     #           lambda_ys=np.round(np.arange(0.5, 1.51, 0.5), 3),
     #           stdevs=inp_stdev, seed=inp_seed)
 
-    # for different seeds with the same statistical parameters
-    for inp_seed in range(100, 2000, 100):
+    ### for different seeds with the same statistical parameters
+    for inp_seed in range(110, 111):
         # use a single standard deviation (but make it into an array just for np.meshgrid)
-        inp_stdev = np.array([0.1])
+        inp_stdev = np.array([0.0617])
 
         # 1 combinations of lambda_x, lambda_y
         make_case(lx=7.0, ly=1.7, lz=0.1,
                   cellsize=0.025, nz=10,
-                  lambda_xs=np.round(np.arange(1.0, 2.0, 1.0), 3),
+                  lambda_xs=np.round([4], 3),
                   lambda_ys=np.round(np.arange(1.0, 2.0, 1.0), 3),
                   stdevs=inp_stdev, seed=inp_seed)

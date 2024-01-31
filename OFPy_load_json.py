@@ -6,11 +6,18 @@ import pandas as pd
 from GsPy3DModel import model_3D as m3d
 import edit_polyMesh
 import get_roughness_parameters
+import numpy as np
+import scipy as sp
+import pandas as pd
+import platform
+import math as m
 
 if platform.system() == 'Windows':
+    from plotly.subplots import make_subplots
     import matplotlib.pyplot as plt
     import plotly.graph_objects as go
     import plot_default_format
+    import plotly.express as px
 else:
     from . import plot_default_format
 
@@ -38,6 +45,7 @@ def update_all_json_in_dissolCases(root_directory):  # For Linux and Windows
     fig.add_hline(y=1)
     fig.show()
 
+
 def concatenate_all_json_in_dissolCases(root_directory):
     par = apply_func_to_all_projects_in_dissolCases(root_directory, concatenate_json)
     open(root_directory + '/combined.json', 'w').write(json.dumps(par, indent=4))
@@ -45,6 +53,58 @@ def concatenate_all_json_in_dissolCases(root_directory):
 
 def replace_all_json_in_dissolCases(root_directory):
     apply_func_to_all_projects_in_dissolCases(root_directory, replace_infinity_json)
+
+def tabulate_cond_data(root_directory):
+    par = apply_func_to_all_projects_in_dissolCases(root_directory, read_cond_data)
+
+
+def read_cond_data(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
+    """
+    Replace infinity to numbers in all json files so that Excel can read it
+    :param dissolCases_directory: path of the dissolCases directory
+    :param case_directory: name of the case directory
+    :return: list of concatenated dictionaries. At the end of the iteration it should be dumped to json.
+    """
+    from tabulate import tabulate
+    dirpath = dissolCases_directory + '/' + case_directory
+    filepath = dirpath + '/cond.json'
+
+    if os.path.isfile(filepath):
+        json_data = json.load(open(filepath, 'r'))
+        par = {}
+        par['pc'] = [0, 1000, 2000, 3000, 4000]
+        for pc in par['pc']:
+            for key, value in json_data['pc=' + pc].items():
+                if key in par:
+                    par[key].append(value)  # add the value to the existing list
+                else:
+                    par[key] = [value]  # create a new list for the key
+    else:
+        print('ignored: ' + filepath)
+
+    # write table file
+    open('cond.txt', 'w').write(tabulate(par))
+    return {}
+
+def tabulate_inp_data(root_directory):  # For Linux and Windows
+    # get parameters from json file in all project directories in batch_directory
+    par = apply_func_to_all_projects_in_dissolCases(root_directory, load_json_cond)
+    # this
+    # convert to pandas
+    df = pd.DataFrame.from_dict(par)
+    x = 'lambda_x__in'
+    y = 'cond__mdft'
+    if par['pc=0'].get(x) != None or par['pc=0'].get(y) != None:
+        pd.concat([df, df2[df2['pc'] == 0]], axis=1)
+
+        color_by = 'stdev'
+
+    if platform.system() == 'Windows':
+        # show the contour of fracture opening
+        # np.where... is not to show the closed points in plot
+        fig = px.scatter(df, x=x, y=y, color=color_by)
+        fig.show()
+
 
 def plot_trend(root_directory):  # For Linux and Windows
     # get parameters from json file in all project directories in batch_directory
@@ -194,33 +254,40 @@ def write_variogram_json(dissolCases_directory, case_directory, par):  # For Lin
     Update the content of cond.json from the old format to the new format. (The file geenrated before 9/14/2023 is in old format.)
     :return:
     """
-    filepath = dissolCases_directory + '/' + case_directory + '/variogram.json'
-    input_file_path = dissolCases_directory + '/' + case_directory + '/inp'
-    inp = m3d.read_input(input_file_path)
-    print('Working on ' + dissolCases_directory + '/' + case_directory)
+    casepath = dissolCases_directory + '/' + case_directory
+    filepath = casepath + '/variogram.json'
+    if not os.path.isfile(filepath): # work on this only when file is not exist.
+        input_file_path = casepath + '/inp'
+        if os.path.isfile(input_file_path):
+            inp = m3d.read_input(input_file_path)
+            print('Working on ' + dissolCases_directory + '/' + case_directory)
 
-    # calc some parameters from data in inp
-    nx = inp["nx"]
-    ny = inp["ny"]
-    nz = inp["nz"]
+            # calc some parameters from data in inp
+            nx = inp["nx"]
+            ny = inp["ny"]
+            nz = inp["nz"]
 
-    os.chdir(dissolCases_directory + '/' + case_directory + "/etching")
-    last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+            etching_dir = casepath + "/etching"
+            if os.path.isdir(etching_dir):
+                os.chdir(etching_dir)
+                last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
 
-    statistic_params = {}
-    df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
-                                             nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-    statistic_params['after'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
+                statistic_params = {}
+                df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
+                                                         nrows=(nx + 1) * (ny + 1) * (nz + 1))
+                zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+                statistic_params['after'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
 
+                df_points = edit_polyMesh.read_OF_points("0/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
+                zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+                statistic_params['before'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
 
-    df_points = edit_polyMesh.read_OF_points("constant/polyMesh/points", nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-    statistic_params['before'] = get_roughness_parameters.get_roughness_parameters(inp, zs)
-
-    # Open the JSON file for writing (this will overwrite the existing file)
-    open(filepath, 'w').write(json.dumps(statistic_params, indent=4))
-
+                # Open the JSON file for writing (this will overwrite the existing file)
+                open(filepath, 'w').write(json.dumps(statistic_params, indent=4))
+            else:
+                print('No etching: ' + casepath)
+        else:
+            print('No inp: ' + casepath)
     return {}  # return empty dict for consistency
 
 
@@ -242,6 +309,7 @@ def concatenate_json(dissolCases_directory, case_directory, combined_pars):  # F
 
     return combined_pars
 
+
 def replace_infinity_json(dissolCases_directory, case_directory, par):  # For Linux and Windows (no OF command)
     """
     Replace infinity to numbers in all json files so that Excel can read it
@@ -261,6 +329,7 @@ def replace_infinity_json(dissolCases_directory, case_directory, par):  # For Li
 
     return {}
 
+
 def replace_infinity(obj):
     if isinstance(obj, dict):
         for key, value in obj.items():
@@ -273,6 +342,7 @@ def replace_infinity(obj):
             return '#N/A'
 
     return obj
+
 
 def save_plot(root_directory, ax, key_x, key_y, key_c, im):
     cbar = plt.colorbar(im)
@@ -291,10 +361,13 @@ def save_plot(root_directory, ax, key_x, key_y, key_c, im):
 
 if __name__ == "__main__":
     # batch_directory = 'C:/Users/tohoko.tj/dissolCases/seed7000-stdev0_15/'
-    root_dir = 'C:/Users/tohoko.tj/dissolCases/'
-    # write_variogram_all_json_in_dissolCases(root_dir)
+    # root_dir = 'C:/Users/tohoko.tj/dissolCases/'
+    root_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/'
+    # root_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_1/'
+    write_variogram_all_json_in_dissolCases(root_dir)
     # rewrite_all_json_in_dissolCases(root_dir)
     # update_all_json_in_dissolCases(root_dir)
-    replace_all_json_in_dissolCases(root_dir)
-    concatenate_all_json_in_dissolCases(root_dir)
+    # tabulate_inp_data(root_dir)
+    # replace_all_json_in_dissolCases(root_dir)
+    # concatenate_all_json_in_dissolCases(root_dir)
     # plot_trend(root_dir)

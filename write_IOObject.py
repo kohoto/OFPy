@@ -127,16 +127,13 @@ def write_dict(dictionary, level=0):
             str_list.append(indent + key + '\n' + indent + '{\n')
             str_list = str_list + write_dict(value, level + 1)
             str_list.append(indent + '}\n')
-        else:
-            if isinstance(value, list):
-                str_list.append(indent + key + ' nonuniform List<scalar>\n' + indent + str(len(value)) + '\n' + indent + '(\n')
+        elif isinstance(value, list):
+                str_list.append(indent + key + '    nonuniform List<scalar>\n' + indent + str(len(value)) + '\n' + indent + '(\n')
                 value = ['{}    {}\n'.format(indent, str(x)) for x in value]
                 str_list = str_list + value  # assuming value is a list of scalars
                 str_list = str_list + [indent + ');\n']
-            else:
-                if isinstance(value, int):
-                    value = 'uniform   ' + str(value)
-                str_list.append(indent + key + ' ' + value + ';\n')
+        else: # just write key and value
+            str_list.append(indent + key + '    ' + str(value) + ';\n')
 
     return str_list
 
@@ -178,8 +175,13 @@ def get_header(cls, loc, obj, note=""):
 
 def write_OF_dictionary(cls, loc, obj, dict):
     headers = get_header(cls, loc, obj)
+    if cls == "surfaceScalarField":
+        dimensions = ["\ndimensions      [0 0 0 0 0 0 0];\n\n"]
+    else:
+        dimensions = []
+
     str_list = write_dict(dict, level=0)
-    return headers + str_list
+    return headers + dimensions + str_list
 
 
 def write_file(str_list, file_path):

@@ -35,7 +35,7 @@ def prep_mineralogy_file(project_directory):  # For Linux and Windows (no OF com
     if mineralogy_dist == 'rough':
         os.chdir(project_directory + "/etching")
         sim_array = gsp.GSLIB2ndarray("../roughness", 0, nx + 1, ny + 1)  # roughness file is in [inch]
-        mineralogy = (gsp.affine(sim_array[0], mean, stdev).T < 0.05).astype(int)
+        mineralogy = (gsp.affine(sim_array[0], mean, stdev).T < 0.073).astype(int)
         mineralogy = mineralogy[:-1, :-1]
     elif mineralogy_dist == 'pathchy':
         # create array

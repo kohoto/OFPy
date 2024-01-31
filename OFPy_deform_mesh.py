@@ -152,12 +152,16 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
 # close a fracture for the all projects in 'batch_directory' all at once.
 if __name__ == "__main__":
-    dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
-    # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
-    # get polyMesh from etching folder.
-    os.chdir(dissolCases_dir)
-    dir_list = next(os.walk('.'))[1]
+    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
+    dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1'
+    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
 
-    # run case
-    for proj in dir_list:
-        prep_case(dissolCases_dir + '/' + proj, close=False)
+
+    # get polyMesh from etching folder.
+    batches = next(os.walk(dissolCases_dir))[1]
+    for batch in batches:
+        if int(batch[5:8]) > 117:
+            cases = next(os.walk(dissolCases_dir + '/' + batch))[1]
+            # run case
+            for case in cases:
+                prep_case(dissolCases_dir + '/' + batch + '/' + case, close=True)
