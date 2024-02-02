@@ -8,7 +8,7 @@ if platform.system() == 'Windows':
     import plotly.graph_objects as go
 
 
-def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
+def deform_blockMesh(inp, df_points, roughness=None, pc=1000, intermediate=False):  # this
     """
     This function change the geometry of a blockMesh.
     :param inp: inp file path
@@ -42,7 +42,10 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000):  # this
     ratios = np.arange(1, - 1/nz, -1/nz)
 
     zs = np.transpose(df_points['z'].to_numpy().reshape(nz+1, ny+1, nx+1), (2, 1, 0))
-    wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
+    if intermediate:
+        wids = roughness
+    else:
+        wids = zs[:, :, -1] - zs[:, :, 0]  # top surface - btm surface
 
 
     if close:
@@ -132,14 +135,12 @@ def f(disp, wids, max_disp, youngs_modulus, dx, dy, load):
 
 
 if __name__ == "__main__":
-    # testing the closure function with closure pressure
     from GsPy3DModel import model_3D as m3d
     import os
     import edit_polyMesh
 
     # case_directory = 'C:/Users/tohoko.tj/dissolCases/test_close/lambda1_0-0_5-stdev0_025'
     case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
-    # read nx, ny, size from the input file
     input_file_path = '/inp'
 
     inp = m3d.read_input(case_directory + input_file_path)
@@ -148,17 +149,18 @@ if __name__ == "__main__":
     ny = inp["ny"]
     nz = inp["nz"]
 
-    os.chdir(case_directory + "/etching")
-    last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
-    print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+    ## testing the symmetry mesh for Mou Deng conductivity model => goto OFPy_prep_batch
 
-    df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
-                                             nrows=(nx + 1) * (ny + 1) * (nz + 1))
-    df_points['index_column'] = df_points.index
-
-    pcs = [pc * 1000 for pc in list(range(5))]
-    for pc in pcs:
-        zzs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
-        print("avg width of original opening: " + str(np.average(zzs[:, :, -1] - zzs[:, :, 0])))
-
-        deform_blockMesh(inp, df_points.copy(), roughness=None, pc=pc)
+    ## testing the closure function with closure pressure
+    # os.chdir(case_directory + "/etching")
+    # last_timestep_dir = str(max([int(a) for a in os.listdir('../etching') if a.isnumeric()]))
+    # print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
+    # df_points = edit_polyMesh.read_OF_points(last_timestep_dir + "/polyMesh/points",
+    #                                          nrows=(nx + 1) * (ny + 1) * (nz + 1))
+    # df_points['index_column'] = df_points.index
+    # pcs = [pc * 1000 for pc in list(range(5))]
+    # for pc in pcs:
+    #     zzs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
+    #     print("avg width of original opening: " + str(np.average(zzs[:, :, -1] - zzs[:, :, 0])))
+    #
+    #     deform_blockMesh(inp, df_points.copy(), roughness=None, pc=pc)

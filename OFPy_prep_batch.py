@@ -81,13 +81,69 @@ def prep_batch(batch_directory, dissolCases_dir):
 
     # create rough surface mesh
     for proj in dir_list:
-        OFPy_deform_mesh.prep_case(proj, close=False)
+        OFPy_deform_mesh.prep_case(proj, mode='close')
+
+def prep_batch_MouDeng(batch_directory, MouDeng_dir):
+    """
+    Use after OFPy_make_case.py.
+    Create 'etching' and 'conductivity' directories.
+    Copy OF input files from start_proj to each project directory in batch_directory.
+    :param batch_directory: path to the directory you desire to copy OF input files from.
+    :param MouDeng_dir: path to the parent "dissolCases" directory.
+    :return: a set of the OF projects ready to run.
+    """
+    cases = ['conductivity' + str(pc * 1000) for pc in list(range(5))]
+    # get polyMesh from etching folder.
+    os.chdir(batch_directory)
+    dir_list = os.listdir(batch_directory)
+    dir_list = [d for d in dir_list if os.path.isdir(os.path.join(batch_directory, d))]
+    start_proj_name = MouDeng_dir + '/start_proj'
+    OFPy_batch_dir = MouDeng_dir + '/OFPy_batch'
+    # sbatch files
+    cmd = ['ln -s  ' + OFPy_batch_dir + '/ClosureCondBatch.sbatch ' + batch_directory + command_separator]
+    os.system(''.join(cmd))
+
+    # copy cases
+    for new_proj_name in dir_list:
+        print('creating project files for ' + new_proj_name)
+        for case in cases:
+            start_case_dir = start_proj_name
+
+            new_case_dir = new_proj_name + '/' + case
+
+            cmd = ['mkdir ' + new_case_dir + command_separator,
+                   'mkdir -p ' + new_case_dir + '/constant' + command_separator,
+                   'cp -rp ' + start_case_dir + '/constant/* ' + new_case_dir + '/constant/' + command_separator, # copy constant (cause polyMesh is unique)
+                   'mkdir -p ' + new_case_dir + '/0' + command_separator,
+                   'cp -rp ' + start_case_dir + '/Zero/* ' + new_case_dir + '/0/' + command_separator,             # hard copy 0 files (will be rewritten by OF simulation)
+                   # remove constant except polyMesh & add symbolic links in constant except polyMesh
+                   'rm ' + new_case_dir + '/constant/transportProperties' + command_separator,
+                   'ln -s ' + start_case_dir + '/constant/transportProperties ' + new_case_dir + '/constant/transportProperties' + command_separator,
+
+                   # add symbolic links for other dirs
+                   'ln -s ' + start_case_dir + '/system ' + new_case_dir + command_separator,
+                   # hard copy bash files
+                   'ln -s  ' + start_case_dir + '/PararellRun ' + new_case_dir + command_separator,
+                   'chmod 775 ' + new_case_dir + '/PararellRun',
+                   'rm ' + new_case_dir + '/constant/turbulenceProperties' + command_separator,
+                   'ln -s ' + start_case_dir + '/constant/turbulenceProperties ' + new_case_dir +'/constant/turbulenceProperties' + command_separator]
+            os.system(''.join(cmd))
+
+    # create rough surface mesh
+    for proj in dir_list:
+        OFPy_deform_mesh.prep_case(proj, mode='intermediate')
 
 
 if __name__ == '__main__':
-    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
     # dissolCases_dir = 'C:/Users/tohoko.tj/dissolCases'
-    batch_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed6000-stdev0_1'
-    dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2'
-    prep_batch(batch_dir, dissolCases_dir)
+    # batch_dir = dissolCases_dir + '/seed6000-stdev0_025'
+    # dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2'
+    # batch_dir = dissolCases_dir + '/stdev0_1/seed6000-stdev0_1'
+    # prep_batch(batch_dir, dissolCases_dir)
+    ## Test the intermediate conductivity models
+    MouDeng_dir = 'C:/Users/tohoko.tj/MouDeng'
+    batch_dir = MouDeng_dir + '/test01'
+    prep_batch_MouDeng(batch_dir, MouDeng_dir)
+
+
 

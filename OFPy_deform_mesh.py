@@ -22,7 +22,7 @@ else:
     from . import OFPy_deform_mesh
     command_separator = ';'
 
-def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
+def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF command)
     """
     Implements the roughness data to blockMesh and save the new blockMesh file to '0' directory.
     Originally, blockMesh command in OF crates a box mesh without roughenss on the surface.
@@ -38,15 +38,18 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
 
     start = time.time()
     initial_dir = os.getcwd()
-    if close:
+    if mode == 'close':
         print('Preparing mesh for ' + case_directory + '/conductivity')
         # get polyMesh from etching folder.
         last_timestep_dir = str(max([int(a) for a in os.listdir(case_directory + '/etching') if a.isnumeric()]))
         print("Max timestep is: " + last_timestep_dir + ". Copy this mesh to conductivity simulation.")
         orig_points_path = case_directory + '/etching/' + last_timestep_dir + '/polyMesh/points'
-    else:
+    elif mode == 'etching':
         print('Preparing mesh for ' + case_directory + '/etching')
         orig_points_path = case_directory + '/etching/constant/polyMesh/points'
+    elif mode == 'intermediate':
+        print('Preparing mesh for ' + case_directory)
+        orig_points_path = case_directory + '/conductivity0/constant/polyMesh/points'
 
 
     # read nx, ny, size from the input file
@@ -72,7 +75,7 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
     df_points['index_column'] = df_points.index
 
 
-    if close:
+    if mode == 'close':
         # compute paramters independent to pc and write cond.json file
         zs = np.transpose(df_points['z'].to_numpy().reshape(nz + 1, ny + 1, nx + 1), (2, 1, 0))
         wids = zs[:, :, -1] - zs[:, :, 0]
@@ -101,9 +104,8 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
 
-    else:
+    elif mode == 'etching':
         # run blockMesh and polyMesh
-
         os.chdir(case_directory + "/etching")
         # print("Run dissolFoam case at {0}".format(os.getcwd()))
 
@@ -138,6 +140,23 @@ def prep_case(case_directory, close):  # For Linux and Windows (no OF command)
                                         df_points_deformed)  # write new mesh in constant/polyMesh/
         # finally, copy mesh to 0
         os.system('mkdir -p 0/polyMesh' + command_separator + 'cp -r constant/polyMesh/points 0/polyMesh/points')
+
+    else:
+        # copy mesh from start project dir to each conductivity dir
+        pcs = [pc * 1000 for pc in list(range(5))]
+        for pc in pcs:
+            os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
+            # os.system(
+            #     "mkdir -p constant/polyMesh; "  # create directory if not exist
+            #     "cp -r ../constant/polyMesh constant; ")    # copy all mesh related files
+            #
+            sim_array = gsp.GSLIB2ndarray("../roughness" + str(pc), 0, nx + 1, ny + 1)  # roughness file is in [inch]
+            roughness = sim_array.T
+
+            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(),
+                                                                   roughness=roughness, intermediate=True)
+            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
+                                            df_points_deformed)  # write new mesh in constant/polyMesh/
 
     print("Elapsed time: " + str(time.time() - start) + " s")
     '''
