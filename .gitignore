@@ -2,3 +2,8 @@ __pycache__/
 .idea/
 *.pyc
 GsPy3DModel/
+*.json
+*.dat
+*.asv
+*.vsdx
+*.xlsx
