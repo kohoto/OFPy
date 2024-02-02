@@ -49,7 +49,9 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
         orig_points_path = case_directory + '/etching/constant/polyMesh/points'
     elif mode == 'intermediate':
         print('Preparing mesh for ' + case_directory)
-        orig_points_path = case_directory + '/conductivity0/constant/polyMesh/points'
+        initial_dir = os.getcwd()
+        # case must be directory under MouDeng dir.
+        orig_points_path = '../start_proj/constant/polyMesh/points'
 
 
     # read nx, ny, size from the input file
@@ -62,6 +64,8 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
     lz = inp["lz"] * 0.0254  # inch => m
     nx = inp["nx"]
     ny = inp["ny"]
+    if mode == 'intermediate':
+        ny = 256
     nz = inp["nz"]
     dx = inp["dx"] * 0.0254
     dy = inp["dx"] * 0.0254
@@ -70,7 +74,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
     hmaj1 = inp["hmaj1"]
     hmin1 = inp["hmin1"]
     seed = inp["seed"]
-
+    print("Before reading inp cwd:", os.getcwd())
     df_points = edit_polyMesh.read_OF_points(orig_points_path, nrows=(nx + 1) * (ny + 1) * (nz + 1))
     df_points['index_column'] = df_points.index
 
@@ -103,7 +107,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(), pc=pc)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
-
+        os.chdir(initial_dir)
     elif mode == 'etching':
         # run blockMesh and polyMesh
         os.chdir(case_directory + "/etching")
@@ -145,6 +149,8 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
         # copy mesh from start project dir to each conductivity dir
         pcs = [pc * 1000 for pc in list(range(5))]
         for pc in pcs:
+            print("Before chdir cwd:", os.getcwd())
+            print("case_directory: ", case_directory)
             os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
             # os.system(
             #     "mkdir -p constant/polyMesh; "  # create directory if not exist
@@ -157,7 +163,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
                                                                    roughness=roughness, intermediate=True)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
-
+            os.chdir(initial_dir)
     print("Elapsed time: " + str(time.time() - start) + " s")
     '''
     # for Lenovo linux
@@ -169,18 +175,24 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
     os.chdir(initial_dir)
 
 
+
 # close a fracture for the all projects in 'batch_directory' all at once.
 if __name__ == "__main__":
-    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
-    dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1'
-    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
 
-
+    # dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1'
     # get polyMesh from etching folder.
-    batches = next(os.walk(dissolCases_dir))[1]
-    for batch in batches:
-        if int(batch[5:8]) > 117:
-            cases = next(os.walk(dissolCases_dir + '/' + batch))[1]
-            # run case
-            for case in cases:
-                prep_case(dissolCases_dir + '/' + batch + '/' + case, close=True)
+    # batches = next(os.walk(dissolCases_dir))[1]
+    # for batch in batches:
+    #     if int(batch[5:8]) > 117:
+    #         cases = next(os.walk(dissolCases_dir + '/' + batch))[1]
+    #         # run case
+    #         for case in cases:
+    #             prep_case(dissolCases_dir + '/' + batch + '/' + case, mode='close')
+
+    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/seed6000-stdev0_025'
+    # batch_dir = 'C:/Users/tohoko.tj/dissolCases/test_close'
+    batch_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng/test01'
+    cases = next(os.walk(batch_dir))[1]
+    # run case
+    for case in cases:
+        prep_case(batch_dir + '/' + case, mode='intermediate')

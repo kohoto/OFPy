@@ -124,7 +124,7 @@ def prep_batch_MouDeng(batch_directory, MouDeng_dir):
                    'ln -s ' + start_case_dir + '/system ' + new_case_dir + command_separator,
                    # hard copy bash files
                    'ln -s  ' + start_case_dir + '/PararellRun ' + new_case_dir + command_separator,
-                   'chmod 775 ' + new_case_dir + '/PararellRun',
+                   'chmod 775 ' + new_case_dir + '/PararellRun' + command_separator,
                    'rm ' + new_case_dir + '/constant/turbulenceProperties' + command_separator,
                    'ln -s ' + start_case_dir + '/constant/turbulenceProperties ' + new_case_dir +'/constant/turbulenceProperties' + command_separator]
             os.system(''.join(cmd))
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     # dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2'
     # batch_dir = dissolCases_dir + '/stdev0_1/seed6000-stdev0_1'
     # prep_batch(batch_dir, dissolCases_dir)
-    ## Test the intermediate conductivity models
+    # Test the intermediate conductivity models
     MouDeng_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng'
     batch_dir = MouDeng_dir + '/test01'
     prep_batch_MouDeng(batch_dir, MouDeng_dir)
