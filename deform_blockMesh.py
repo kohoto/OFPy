@@ -102,7 +102,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000, intermediate=False
             )
             fig.show()
 
-    else:  # shift
+    elif not close and not intermediate:  # if etching, then shift (Intermediate doesn't need shift because the symmetry surface is flat)
         zs[:, :, -1] += roughness
 
     # getting internal points z coordinates
