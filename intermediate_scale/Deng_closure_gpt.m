@@ -2,28 +2,35 @@
 % output width(after).dat
 clear; close all;
 
-lpoints = 64;                 % Points number along length direction
-hpoints = 256;                % Points number along height direction
-length = 10 * 0.304722;       % Fracture length in meter
-height = 10 * 0.304722;       % Fracture height in meter
-pv = 6000 * 6894.75728;       % Vertical stress in Pa
-ph = 3000 * 6894.75728;       % Horizontal stress in Pa
-ym = 4000000 * 6894.75728;    % Young's modulus in Pa
+%% unit converters
+psi2pa = 6894.75728;
+ft2m = 0.304722;
+mm2in = 0.0393701;
+m2mm = 1000;
+
+nx = 64;                 % Points number along length direction
+ny = 256;                % Points number along height direction
+Lx = 10 * ft2m;       % Fracture length in meter
+Ly = 10 * ft2m;       % Fracture height in meter
+pv = 6000 * psi2pa;       % Vertical stress in Pa
+% ph = 3000 * 6894.75728;       % Horizontal stress in Pa, don't need this
+% anymore since looping with different closure stress
+ym = 4000000 * psi2pa;    % Young's modulus in Pa
 pr = 0.3;                     % Poisson ratio
-pi = 3.141592654;             % PI
+% pi = 3.141592654;             % PI
 
-nx = lpoints;
-ny = hpoints;
-dx = length / (nx - 1);
-dy = height / (ny - 1);
+dx = Lx / (nx - 1);
+dy = Ly / (ny - 1);
 sm = ym / 2 / (1 + pr);
+pcs = [0:1000:4000] .* psi2pa;
 
+for ph = pcs
 a = zeros(1, ny);
 w_i = zeros(nx, ny);
 w_c = zeros(1, ny);
 w_o = zeros(nx, ny);
 
-fp1 = fopen('width.dat', 'r');  % Input file
+fp1 = fopen('inp_width.dat', 'r');  % Input file
 
 for i = 1:ny
     for j = 1:nx            
@@ -67,11 +74,11 @@ for i = 1:nx
                     l = l + 1;
                 end
             end
-            b_s = b_sum / l / 2 / 1000;  % In meter
+            b_s = b_sum / l / 2 / m2mm;  % In meter
             c_s = sqrt(a_s^2 - b_s^2);   % Focus in meter
             sinh_s = b_s / c_s;
             cosh_s = a_s / c_s;
-            disp_s = 1000 * 2 * c_s * (1 - pr^2) / ym * (2 * ph * cosh_s + ph * sinh_s - pv * sinh_s);
+            disp_s = m2mm * 2 * c_s * (1 - pr^2) / ym * (2 * ph * cosh_s + ph * sinh_s - pv * sinh_s);
             w_min = wmin(w_c);
 
             if disp_s > w_min
@@ -84,8 +91,8 @@ for i = 1:nx
             end
         else
             a_m = a_sum / k;
-            r_c = 1 - 2 * a_sum / height;
-            disp_m = 1000 * 4 * ph * (pr - 1) * a_m * log(abs(cos(pi * (1 - r_c) / 2))) / (1 - r_c)^2 / pi / sm;
+            r_c = 1 - 2 * a_sum / Ly;
+            disp_m = m2mm * 4 * ph * (pr - 1) * a_m * log(abs(cos(pi * (1 - r_c) / 2))) / (1 - r_c)^2 / pi / sm;
             w_min = wmin_m(w_c);
 
             if disp_m > w_min
@@ -112,36 +119,47 @@ for i = 1:nx
     w_o(i, :) = w_c;
 end
 
-fp2 = fopen('width(after).dat', 'w+');  % Output
+xvec = repmat([0:dx:(nx-1)*dx]' ./ ft2m, [1, ny]); % ft
+yvec = repmat([0:dy:(ny-1)*dy] ./ ft2m, [nx, 1]); % ft
+wvec = w_o(:); % mm - caluclated using Deng's closure model
+wivec = w_avg_Mou(:);
 
-xvec = [];
-yvec = [];
-wvec = [];
-wivec = [];
-for i = 1:nx
-    for j = 1:ny
-        xvec = [xvec; (i - 1) * dx / 0.304722]; % ft
-        yvec = [yvec; (j - 1) * dy / 0.304722]; % ft
-        wvec = [wvec; w_o(i, j)]; % mm
-        wivec = [wivec; w_avg_Mou(i, j)]; % mm
-    end
-end
-fclose(fp2);
-[A, B, C] = NK_correlation_params(ym ./ 6894.75728);
-kfw_NK_mdft = get_conductivity(wivec .* 0.0393701, ph / 6894.75728, A, B, C);
-kfw_NK = kfw_NK_mdft ./ (1.0133e15 * 3.28084); % [m3]
-wvec(wvec == 0) = (12 .* kfw_NK(wvec == 0)) .^ (1 / 3) .* 1000; % [mm]
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-% w_result = reshape(w_after,[nx*nz,1]);
-roughness_header = {"Closed Frac Width dist."; ...
-" 1  256   64    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
-"value"};
-writecell([roughness_header; num2cell(wvec)], 'roughness.dat');
+[A, B, C] = NK_correlation_params(ym ./ psi2pa);
+kfw_NK_mdft = get_conductivity(wivec .* mm2in, ph / psi2pa, A, B, C);
+kfw_NK = kfw_NK_mdft ./ 1.0133e15 .* ft2m; % [m3]
 
 % min-width thres in my model?? 
 wid_thres_exp = 3.28914e-3; % [mm]
 disp(['# of points that is less than the experimental scale width threshold = ', num2str(sum(wvec < wid_thres_exp)),...
     ' (', num2str(sum(wvec < wid_thres_exp) / numel(w_avg_Mou) * 100), ' %)']);
+wvec(wvec == 0) = (12 .* kfw_NK(wvec == 0)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
+wvec(wvec == 0) = wid_thres_exp; % for the location wvec = 0 even after assigning NK corr. width, use the threshold_width from the experimental scale.
+
+% w_result = reshape(w_after,[nx*nz,1]);
+roughness_header = {"Closed Frac Width dist."; ...
+" 1  256   64    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
+"value"};
+writecell([roughness_header; num2cell(wvec(:))], ['roughness', num2str(ph / psi2pa), '.dat']);
+
+% % roughness_header = { ...
+% %     "TITLE = 'AftrerClosureWidth'"; ... 
+% %     "VARIABLES = 'x (feet)'"; ...
+% %     "'z (feet)'"; ...
+% %     "'y (mm)'"; ...
+% %     "'k (md)'"; ...
+% %     "'Ef ()'"; ...
+% %     "ZONE T = 'Data'"; ...
+% %     "I = 64, J = 256 ZONETYPE = Ordered"; ... 
+% %     "DATAPACKING = POINT"; ...
+% %     "DT = (SINGLE SINGLE SINGLE  SINGLE SINGLE)" };
+% % % Convert numbers to formatted strings
+% % c = num2cell([xvec(:), yvec(:), -wvec(:), zeros(size(wvec, 1), 2)]);
+% % c = cellfun(@(x) sprintf('%.8f', x), c, 'UniformOutput', false);
+% % writecell([roughness_header, cell(size(roughness_header, 1), 4); c], 'roughness.dat','Delimiter',' ', 'QuoteStrings', 'none');
+% writetable(T,'myData.txt','Delimiter',' ') 
+
+end
+%% external functions
 % etched width = roughness
 function kfw_mdft = get_conductivity(w_inch, ph_psi, A, B, C)
     kfw_mdft = A .* w_inch .^ B .* exp(C .* ph_psi); % subs inch
@@ -160,8 +178,6 @@ Sres_psi = 0.0201 .* E - 25137;
     end
     C = -0.001 .* (coeff(1) - coeff(2) .* log(Sres_psi));
 end
-
-
 
 function xmin = wmin(a)
     hpoints = length(a);
