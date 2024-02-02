@@ -151,7 +151,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
             #     "cp -r ../constant/polyMesh constant; ")    # copy all mesh related files
             #
             sim_array = gsp.GSLIB2ndarray("../roughness" + str(pc) + ".dat", 0, nx + 1, ny + 1)  # roughness file is in [inch]
-            roughness = sim_array.T
+            roughness = sim_array[0].T
 
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(),
                                                                    roughness=roughness, intermediate=True)

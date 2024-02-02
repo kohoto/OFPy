@@ -141,7 +141,7 @@ if __name__ == '__main__':
     # batch_dir = dissolCases_dir + '/stdev0_1/seed6000-stdev0_1'
     # prep_batch(batch_dir, dissolCases_dir)
     ## Test the intermediate conductivity models
-    MouDeng_dir = 'C:/Users/tohoko.tj/MouDeng'
+    MouDeng_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng'
     batch_dir = MouDeng_dir + '/test01'
     prep_batch_MouDeng(batch_dir, MouDeng_dir)
 
