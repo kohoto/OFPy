@@ -124,7 +124,7 @@ def prep_batch_MouDeng(batch_directory, MouDeng_dir):
                    'ln -s ' + start_case_dir + '/system ' + new_case_dir + command_separator,
                    # hard copy bash files
                    'ln -s  ' + start_case_dir + '/PararellRun ' + new_case_dir + command_separator,
-                   'chmod 775 ' + new_case_dir + '/PararellRun',
+                   'chmod 775 ' + new_case_dir + '/PararellRun' + command_separator,
                    'rm ' + new_case_dir + '/constant/turbulenceProperties' + command_separator,
                    'ln -s ' + start_case_dir + '/constant/turbulenceProperties ' + new_case_dir +'/constant/turbulenceProperties' + command_separator]
             os.system(''.join(cmd))

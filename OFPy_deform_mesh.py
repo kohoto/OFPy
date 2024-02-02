@@ -103,7 +103,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
             df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(), pc=pc)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
-
+            os.chdir(initial_dir)
     elif mode == 'etching':
         # run blockMesh and polyMesh
         os.chdir(case_directory + "/etching")
@@ -157,7 +157,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
                                                                    roughness=roughness, intermediate=True)
             edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
                                             df_points_deformed)  # write new mesh in constant/polyMesh/
-
+            os.chdir(initial_dir)
     print("Elapsed time: " + str(time.time() - start) + " s")
     '''
     # for Lenovo linux
