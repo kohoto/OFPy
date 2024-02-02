@@ -119,6 +119,12 @@ for i = 1:nx
     w_o(i, :) = w_c;
 end
 
+% temporary adding grids on both x and y to fit with my mesh
+w_o = [w_o(1, :); w_o];
+w_o = [w_o(:, 1), w_o];
+w_avg_Mou = [w_avg_Mou(1, :); w_avg_Mou];
+w_avg_Mou = [w_avg_Mou(:, 1), w_avg_Mou];
+
 xvec = repmat([0:dx:(nx-1)*dx]' ./ ft2m, [1, ny]); % ft
 yvec = repmat([0:dy:(ny-1)*dy] ./ ft2m, [nx, 1]); % ft
 wvec = w_o(:); % mm - caluclated using Deng's closure model
@@ -137,7 +143,7 @@ wvec(wvec == 0) = wid_thres_exp; % for the location wvec = 0 even after assignin
 
 % w_result = reshape(w_after,[nx*nz,1]);
 roughness_header = {"Closed Frac Width dist."; ...
-" 1  256   64    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
+" 1  257   65    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
 "value"};
 writecell([roughness_header; num2cell(wvec(:))], ['roughness', num2str(ph / psi2pa), '.dat']);
 
