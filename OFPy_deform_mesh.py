@@ -66,6 +66,7 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
     ny = inp["ny"]
     if mode == 'intermediate':
         ny = 256
+        inp["ny"] = ny
     nz = inp["nz"]
     dx = inp["dx"] * 0.0254
     dy = inp["dx"] * 0.0254
