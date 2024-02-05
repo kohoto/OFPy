@@ -24,7 +24,7 @@ def deform_blockMesh(inp, df_points, roughness=None, pc=1000, intermediate=False
        youngs_modulus = 2.9e6  # psi - I took this value from my compression test in geology lab
     else:
         close = False
-        roughness *= 0.0254
+        roughness *= 0.0254 # in2m
 
     lx = inp["lx"] * 0.0254
     ly = inp["ly"] * 0.0254

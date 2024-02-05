@@ -157,6 +157,8 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
             #     "mkdir -p constant/polyMesh; "  # create directory if not exist
             #     "cp -r ../constant/polyMesh constant; ")    # copy all mesh related files
             #
+
+            # roughness file must be in inch
             sim_array = gsp.GSLIB2ndarray("../roughness" + str(pc) + ".dat", 0, nx + 1, ny + 1)  # roughness file is in [inch]
             roughness = sim_array[0].T
 

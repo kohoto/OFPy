@@ -138,14 +138,18 @@ kfw_NK = kfw_NK_mdft ./ 1.0133e15 .* ft2m; % [m3]
 wid_thres_exp = 3.28914e-3; % [mm]
 disp(['# of points that is less than the experimental scale width threshold = ', num2str(sum(wvec < wid_thres_exp)),...
     ' (', num2str(sum(wvec < wid_thres_exp) / numel(w_avg_Mou) * 100), ' %)']);
-wvec(wvec == 0) = (12 .* kfw_NK(wvec == 0)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
+disp(['# of points with 0 width = ', num2str(sum(wvec == 0)),...
+    ' (', num2str(sum(wvec == 0) / numel(w_avg_Mou) * 100), ' %)']);
+wvec(wvec  < wid_thres_exp) = (12 .* kfw_NK(wvec  < wid_thres_exp)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
 wvec(wvec == 0) = wid_thres_exp; % for the location wvec = 0 even after assigning NK corr. width, use the threshold_width from the experimental scale.
-
+disp(['# of points with 0 width even after applying exp scale corr. = ', num2str(sum(wvec == wid_thres_exp)),...
+    ' (', num2str(sum(wvec == wid_thres_exp) / numel(w_avg_Mou) * 100), ' %)']);
+disp('==============')
 % w_result = reshape(w_after,[nx*nz,1]);
 roughness_header = {"Closed Frac Width dist."; ...
 " 1  257   65    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
 "value"};
-writecell([roughness_header; num2cell(wvec(:) ./ m2mm)], ['roughness', num2str(ph / psi2pa), '.dat']);
+writecell([roughness_header; num2cell(wvec(:) .* mm2in)], ['roughness', num2str(ph / psi2pa), '.dat']);
 
 % % roughness_header = { ...
 % %     "TITLE = 'AftrerClosureWidth'"; ... 
