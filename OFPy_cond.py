@@ -27,6 +27,10 @@ def calc_cond(case_directory):
     lz = inp["lz"] * 0.0254
     nx = inp["nx"]
     ny = inp["ny"]
+    if inp["ly"] == 120.0:
+        ny = 256
+        inp["ny"] = ny
+
     nz = inp["nz"]
     dx = inp["dx"]
     dens = 1.e3  # [kg/m3]
@@ -81,11 +85,14 @@ def calc_cond(case_directory):
         }
 
     filepath = case_directory + '/cond.json'
-    if os.path.isfile(filepath):
+    if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
         json_data = json.load(open(filepath, 'r'))
+    else:
+        json_data = dict()
 
-        for key, value in cond_dict.items():
-            json_data[key] = value
+    for key, value in cond_dict.items():
+        json_data[key] = value
+
 
     open(case_directory + '/cond.json', 'w').write(json.dumps(json_data, indent=4))
     return 0
@@ -109,95 +116,19 @@ if __name__ == "__main__":
     # case_directory = 'C:/Users/tohoko.tj/dissolCases/temp2000/lambda5_0-1_0-stdev0_075'
 
     # dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1'
-    # root, batch_dirs, files = next(os.walk(dissolCases_dir))
-    # for batch_directory in batch_dirs:
-    #     root, case_dirs, files = next(os.walk(dissolCases_dir + '/' + batch_directory))
-    #     for case_directory in case_dirs:
-    #         print('working on %s' % batch_directory + '/' + case_directory)
-    #         calc_cond(dissolCases_dir + '/' + batch_directory + '/' + case_directory)
+    dissolCases_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng'
+    root, batch_dirs, files = next(os.walk(dissolCases_dir))
+    for batch_directory in batch_dirs:
+        root, case_dirs, files = next(os.walk(dissolCases_dir + '/' + batch_directory))
+        for case_directory in case_dirs:
+            print('working on %s' % batch_directory + '/' + case_directory)
+            calc_cond(dissolCases_dir + '/' + batch_directory + '/' + case_directory)
 
     # Run conductivity calculation for specific cases
-    cases = [
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed2000-stdev0_05/lambda1_0-1_0-stdev0_05",
-    #"C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed3000-stdev0_05/lambda1_0-1_0-stdev0_05",
-    #"C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed6000-stdev0_05/lambda1_0-1_0-stdev0_05",
-    #"C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed7000-stdev0_05/lambda1_0-1_0-stdev0_05",
-    #"C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed7500-stdev0_05/lambda1_0-1_0-stdev0_05",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0119-stdev0_075/lambda1-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0129-stdev0_075/lambda1-1_0-stdev0_075", # maybe not a number
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0134-stdev0_075/lambda1-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0135-stdev0_075/lambda1-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0149-stdev0_075/lambda1-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed1014-stdev0_075/lambda1_0-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed1032-stdev0_075/lambda1_0-1_0-stdev0_075",
-    #"C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_075/seed1039-stdev0_075/lambda1_0-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0107-stdev0_075/lambda1_0-1_0-stdev0_075",
-    #"R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0108-stdev0_075/lambda1_0-1_0-stdev0_075", # pin.out doesn't exist
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0109-stdev0_075/lambda1_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0110-stdev0_075/lambda1_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0114-stdev0_075/lambda1_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0120-stdev0_075/lambda1_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0124-stdev0_075/lambda1_0-1_0-stdev0_075",
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed2000-stdev0_05/lambda2_0-1_0-stdev0_05",
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed3000-stdev0_05/lambda2_0-1_0-stdev0_05",
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed6000-stdev0_05/lambda2_0-1_0-stdev0_05",
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed7000-stdev0_05/lambda2_0-1_0-stdev0_05",
-    # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed7500-stdev0_05/lambda2_0-1_0-stdev0_05",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0117-stdev0_075/lambda2-1_0-stdev0_075", # cond = q[0] * mu * lx / dp / ly  # [m3] TypeError: 'float' object is not subscriptable
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0120-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0132-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0134-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0136-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0138-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0150-stdev0_075/lambda2-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0106-stdev0_075/lambda2_0-1_0-stdev0_075", #cant read pin.out
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0113-stdev0_075/lambda2_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_075/seed0120-stdev0_075/lambda2_0-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0101-stdev0_075/lambda4-1_0-stdev0_075", # pin or pout is inf or nan
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0102-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0126-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0127-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0131-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0132-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0134-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0140-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0141-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0146-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0149-stdev0_075/lambda4-1_0-stdev0_075",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed0121-stdev0_1/lambda4_0-1_0-stdev0_1", # ddivide by zero
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed0126-stdev0_1/lambda4_0-1_0-stdev0_1",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0102-stdev0_025/lambda6-1_0-stdev0_025", # fail reading points (wrong size)
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0109-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0110-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0111-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0112-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0113-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0118-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0121-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0122-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0123-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0124-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0134-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_025/seed0135-stdev0_025/lambda6-1_0-stdev0_025",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0125-stdev0_05/lambda6-1_0-stdev0_05", # pin or pout is inf or nan
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0143-stdev0_05/lambda6-1_0-stdev0_05", # pin or pout is inf or nan at cond4000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0144-stdev0_05/lambda6-1_0-stdev0_05",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0145-stdev0_05/lambda6-1_0-stdev0_05", # pin or pout is inf or nan at cond3000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0146-stdev0_05/lambda6-1_0-stdev0_05",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0147-stdev0_05/lambda6-1_0-stdev0_05", # pin or pout is inf or nan at cond4000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0148-stdev0_05/lambda6-1_0-stdev0_05",  # pin or pout is inf or nan at cond3000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0149-stdev0_05/lambda6-1_0-stdev0_05",
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0101-stdev0_075/lambda6-1_0-stdev0_075", #4000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0107-stdev0_075/lambda6-1_0-stdev0_075", # 3000
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0117-stdev0_075/lambda6-1_0-stdev0_075", # 0
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0121-stdev0_075/lambda6-1_0-stdev0_075", # 0
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_075/seed0132-stdev0_075/lambda6-1_0-stdev0_075", # 0
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed0117-stdev0_1/lambda6_0-1_0-stdev0_1", #2
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed0146-stdev0_1/lambda6_0-1_0-stdev0_1", # pout.out doesnt exist
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1/seed0147-stdev0_1/lambda6_0-1_0-stdev0_1", # fail reading q.out
-    # "R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/300s/stdev0_1/seed9150-stdev0_1/lambda6_0-1_0-stdev0_1", # fail reading points
-    ]
-
-    for case_path in cases:
-        print('working on %s' % case_path)
-        calc_cond(case_path)
+    # cases = [
+    # # "C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/Simulation/OpenFOAM_results/dissolCases3/stdev0_05/seed2000-stdev0_05/lambda1_0-1_0-stdev0_05",
+    # ]
+    #
+    # for case_path in cases:
+    #     print('working on %s' % case_path)
+    #     calc_cond(case_path)
