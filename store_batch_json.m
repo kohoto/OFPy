@@ -1,17 +1,30 @@
-function [dataStruct, err_flag] = store_batch_json(dataStruct, file_name, cases_meet_condition)
+function [dataStruct, err_flag] = store_batch_json(dataStruct, file_name, casepath_meet_condition)
 
 % Loop over each subfolder
 err_flag = 0;
 %if isfolder(fullfile(cases_meet_condition, 'etching', '600'))
-jsonFile = fullfile(cases_meet_condition, file_name);
+jsonFile = fullfile(casepath_meet_condition, file_name);
 if isfile(jsonFile)
     % Read the JSON file
     % Save the data in the struct
     % Create a string
     % Split the string by the backslash
-    splitted_str = split(cases_meet_condition, '\');
+    splitted_str = split(casepath_meet_condition, '\');
+
     batch_name = char(splitted_str(end-1));
+    if startsWith(batch_name, 'seed') % checking if it's dissolCases or exp data
+        time_name = char(strcat("time", splitted_str(end-3), "_"));
+        batch_name = batch_name(1:8);
+    else
+        time_name = 'exp';
+    end
     case_name = splitted_str(end);
+    if startsWith(case_name, 'lambda') % checking if it's dissolCases or exp data
+        case_name = case_name{:};
+        case_name = case_name(7:end);
+    else
+        case_name = case_name{:};
+    end
     s = jsondecode(fileread(jsonFile));
     if file_name == "cond.json" && ~isfield(s, 'cond')  % simulation data
         if ~isfield(s, 'wid_e__in') || (isnan(s.wid_e__in) || isinf(s.wid_e__in))
@@ -41,13 +54,13 @@ if isfile(jsonFile)
         end
         if err_flag == 0
             % add to struct only when the data looks good.
-            dataStruct.(strrep(strjoin([batch_name(1:8), case_name(7:end)], ''), '-', '_')) = s;
+            dataStruct.(strrep([time_name, batch_name, case_name], '-', '_')) = s;
         end
 
     elseif file_name == "cond.json" && isfield(s, 'cond')
-        dataStruct.(strrep(case_name{:}, '-', '_')) = s;
+        dataStruct.(strrep([time_name, batch_name, case_name], '-', '_')) = s;
     else % other type of data?
-        dataStruct.(strrep(case_name{:}, '-', '_')) = s;
+        dataStruct.(strrep([time_name, batch_name, case_name], '-', '_')) = s;
     end
 else
     err_flag = 1; % 1: cond.json doesn't exist.

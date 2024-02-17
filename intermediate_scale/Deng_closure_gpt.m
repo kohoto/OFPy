@@ -1,6 +1,6 @@
-% input width.dat
+function Deng_closure_gpt(casepath)
+% input surface2_30.dat
 % output width(after).dat
-clear; close all;
 
 %% unit converters
 psi2pa = 6894.75728;
@@ -23,28 +23,59 @@ dx = Lx / (nx - 1);
 dy = Ly / (ny - 1);
 sm = ym / 2 / (1 + pr);
 pcs = [0:1000:4000] .* psi2pa;
-
-for ph = pcs
-a = zeros(1, ny);
 w_i = zeros(nx, ny);
-w_c = zeros(1, ny);
-w_o = zeros(nx, ny);
 
-fp1 = fopen('inp_width.dat', 'r');  % Input file
 
+fp1 = fopen(fullfile(casepath, 'etching', 'suface1_30.dat'), 'r');  % Input file
+temp = textscan(fp1, '%f %f %f %*[^\n]', 'HeaderLines', 8); % [ft, mm ,ft]'
+temp = temp(:, 2);
+temp = temp{:};
+
+k=0;
 for i = 1:ny
-    for j = 1:nx            
-        temp = fscanf(fp1, '%lf %lf %lf', [1, 3]); % [m, m ,mm]
-        w_i(j, i) = temp(3) * (-2);  % Width in millimeter
+    for j = 1:nx
+        k=k+1;
+        w_i(j, i) = temp(k) * (-2);  % Width in millimeter
         if w_i(j, i) <= 0
             w_i(j, i) = 0;
         end
     end
 end
+
 w_avg_Mou = (w_i - repmat(min(w_i(:, 2:end-1), [], 2), [1, ny])); % mm;
 w_avg_Mou(:, [1, end]) = 0;
 fclose(fp1);
 
+w_avg_Mou_wo_bc = w_avg_Mou(:, 2:end-1);
+data = struct(...
+    'wid_e__in', sum(w_i(:)) / numel(w_i) * mm2in,... 
+    'w0_Mou', sum(w_avg_Mou_wo_bc(:)) / numel(w_i(:, 2:end-1)) * mm2in...
+    );
+
+% Write the JSON data to a file
+fid = fopen(fullfile(casepath, 'cond.json'), 'w');
+if fid == -1
+    error('Could not open file for writing');
+end
+fwrite(fid, jsonencode(data), 'char');
+fclose(fid);
+
+% I started to think he was using Mou's 0 closure stress width for the at beginning
+w_i = w_avg_Mou;
+
+for ph = pcs
+    [wkf_nk, wkf_md] = getConductivity(data.wid_e__in, 1, 0.006, ym / psi2pa / 1e6, ph / psi2pa, 0.1, 0.5, 0.25);
+    disp(['NK_we: ', num2str(wkf_nk), ', MD_we: ', num2str(wkf_md)])
+    % [wkf_nk, wkf_md] = getConductivity(data.w0_Mou, 1, 0.006, ym / psi2pa / 1e6, ph / psi2pa, 0.1, 0.5, 0.25);
+    % disp(['NK_wavg: ', num2str(wkf_nk), ', MD_wavg: ', num2str(wkf_md)])
+end
+
+
+for ph = pcs
+w_c = zeros(1, ny);
+w_o = zeros(nx, ny);
+a = zeros(1, ny);
+% main closure code
 for i = 1:nx
     w_c = w_i(i, :);
     while true
@@ -149,7 +180,7 @@ disp('==============')
 roughness_header = {"Closed Frac Width dist."; ...
 " 1  257   65    1 0.12500000E-01 0.12500000E-01     0.00000000 0.250000E-01 0.250000E-01  1.00000       1";... % not accurate
 "value"};
-writecell([roughness_header; num2cell(wvec(:) .* mm2in)], ['roughness', num2str(ph / psi2pa), '.dat']);
+writecell([roughness_header; num2cell(wvec(:) ./ 2 .* mm2in)], fullfile(casepath, ['roughness', num2str(ph / psi2pa), '.dat']));
 
 % % roughness_header = { ...
 % %     "TITLE = 'AftrerClosureWidth'"; ... 
@@ -169,6 +200,8 @@ writecell([roughness_header; num2cell(wvec(:) .* mm2in)], ['roughness', num2str(
 % writetable(T,'myData.txt','Delimiter',' ') 
 
 end
+end
+
 %% external functions
 % etched width = roughness
 function kfw_mdft = get_conductivity(w_inch, ph_psi, A, B, C)

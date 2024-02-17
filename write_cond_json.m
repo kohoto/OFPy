@@ -1,6 +1,6 @@
 function write_cond_json()
 clear; close all;
-proj_name = 'acidfrac10_rough';
+proj_name = 'acidfrac4';
 expCases_path = fullfile('C:\Users\tohoko.tj\OneDrive - Texas A&M University\Documents\20_Reseach\Experiment\0_profilometer\Tohoko', proj_name);
 
 lambdax = [1.0, 2.0, 4.0, 6.0];
@@ -22,7 +22,7 @@ t = store_exp_var_from_excel();
 jsonFile = fullfile(expCases_path, 'variogram.json');
 if isfile(jsonFile)
     vari_exp = jsondecode(fileread(jsonFile));
-    ax = create_tiledlayout(1, 1);  
+    ax = create_tiledlayout(1, 1, 0.5);  
     ax = plot_variogram(ax, vari_exp);
     lamx = input('Please enter lambdax: ');
     t_case = t(t.ProfilometerFileName==string(proj_name), :);

@@ -52,7 +52,7 @@ min_size = min(marker_sizes);
 marker_sizes = 2 + 10 .* (marker_sizes - min_size) ./ (max_size - min_size);
 % assign small value to the data points that doesn't have marker size
 % paramters
-marker_sizes(isnan(marker_sizes)) = 2;
+marker_sizes(isnan(marker_sizes)) = 5;
 
 
 % remove data points that has invalid numbers
