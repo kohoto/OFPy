@@ -12,3 +12,7 @@ for irow = 1:nrow
     end
     axes = [axes; ax_row];
 end
+
+for i = 1:numel(axes)
+    axes(i) = my_plot_format(axes(i));
+end

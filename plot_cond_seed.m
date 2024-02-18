@@ -12,7 +12,9 @@ time_mode = 'all'; % or 'all' % do you wanna include conductivities from other e
 lambdax = [1.0, 2.0, 4.0, 6.0];
 lambday = [1.0]; % must be only one number to fit all plots in figuress.
 stdev = [0.025, 0.05, 0.075, 0.1];
-
+lx = 7;
+ly = 1.7;
+sdv0 = 0.1;
 file_name = 'cond.json';
 colored_by = 'stdev';
 sized_by = '';
@@ -128,22 +130,14 @@ for j = 1 : size(search_conditions, 2)
         end
 
 
-        %% FIGURE XX: Dependency of the intercept on ideal width
-        hold(ax_C2_we(ilam), 'on');
-        ax_C2_we(ilam) = my_scatter(ax_C2_we(ilam), 'scatter', lamx_title(lamx),...
-            wid_e', 'we', 'normal', ...
-            p_cdc_each(:, 2)', 'C2', 'normal', ...
-            20, cc(istv,:), sprintf("stdev = %f",sdv));
-        hold(ax_C2_we(ilam), 'off');
-
         if time_mode =="600"
             % Overall C1 and C2 for each search conditions
-            p_cdc = polyfit(pc(2:end)', log(mean_cdc(2:end)'), 1);
+            p_C2C1 = polyfit(pc(2:end)', log(mean_cdc(2:end)'), 1);
             hold(ax_cdc(ilam, istv), 'on')
-            fplot(ax_cdc(ilam, istv), @(x) exp(p_cdc(2) + p_cdc(1) .* x), '--', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 2.0);
+            fplot(ax_cdc(ilam, istv), @(x) exp(p_C2C1(2) + p_C2C1(1) .* x), '--', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 2.0);
             % save in struct
-            cdc.(field_name).p_cdc = [p_cdc(1), exp(p_cdc(2))];
-            cdc.(field_name).p_cdc_each = [p_cdc_each(:,1), exp(p_cdc_each(:,2))];
+            cdc.(field_name).p_cdc = [exp(p_C2C1(2)), p_C2C1(1)];  % interp C1, slope C2
+            cdc.(field_name).p_cdc_each = [exp(p_cdc_each(:,2)), p_cdc_each(:,1)];
         end
         % plot(ax_cdc(ilam, istv), pc, mean_cdc - stdv_cdc, ':', 'Color', cc(1, :), 'LineWidth', 1.5);
         % plot(ax_cdc(ilam, istv), pc, mean_cdc + stdv_cdc, ':', 'Color', cc(1, :), 'LineWidth', 1.5);
@@ -186,18 +180,18 @@ for j = 1 : size(search_conditions, 2)
 
         %% FIGURE8: Avged vs conductivity plot
         if time_mode == "all"
-            ana.(field_name).lamx = lamx;
-            ana.(field_name).lamy = lamy;
-            ana.(field_name).stdev = sdv;
+            ana.(field_name).lamx = lamx / lx;
+            ana.(field_name).lamy = lamy / ly;
+            ana.(field_name).stdev = sdv / sdv0;
         else
-            cdc.(field_name).lamx = lamx;
-            cdc.(field_name).lamy = lamy;
-            cdc.(field_name).stdev = sdv;
+            cdc.(field_name).lamx = lamx / lx;
+            cdc.(field_name).lamy = lamy / ly;
+            cdc.(field_name).stdev = sdv / sdv0;
         end
 
         ps = zeros(numel(pc),2);
-        p_cdc = zeros(1,2);
-        p_beta = zeros(1,2);
+        p_C2C1 = zeros(1,2);
+        p_betaalpha = zeros(1,2);
         for i = 1:numel(pc)
             % linear fit on log-log plot
             hold(ax_wavg_vs_cond(ilam, istv), 'on');
@@ -220,39 +214,35 @@ for j = 1 : size(search_conditions, 2)
 
         x = wid_a(idx_both_positive);
         y = cond_simu(idx_both_positive);
-        p_beta = polyfit(log(x'), log(y'), 1);
-        fplot(ax_wavg_vs_cond(ilam, istv), @(x) exp(p_beta(2) + p_beta(1) .* log(x)), '--', 'Color', 'k', 'DisplayName', '');
+        p_betaalpha = polyfit(log(x'), log(y'), 1);
+        fplot(ax_wavg_vs_cond(ilam, istv), @(x) exp(p_betaalpha(2) + p_betaalpha(1) .* log(x)), '--', 'Color', 'k', 'DisplayName', '');
         hold(ax_wavg_vs_cond(ilam, istv), 'on');
 
         if time_mode =="all"
-            % update slope values
-            ana.(field_name).ps_slope = ps(:,1);
-            ana.(field_name).ps_interp = exp(ps(:,2));
-
-            ana.(field_name).p_beta = p_beta(1);
-            ana.(field_name).p_alpha = exp(p_beta(2));
+            ana.(field_name).p_alphabeta = [exp(p_betaalpha(2)), p_betaalpha(1)];
         end
 
         %% FIGURE9: Etched vs average width plot
-        pe = zeros(numel(pc),2);
+        p_BA = zeros(numel(pc),2);
         for i = 1:numel(pc)
             % linear fit on log-log plot
             hold(ax_we_vs_cond(ilam, istv), 'on');
             idx_both_positive = (wid_e > 0) & cond_simu(:, i) > 0;
-            pe(i, :) = polyfit(log(wid_e(idx_both_positive)'), log(cond_simu(idx_both_positive,i)'), 1);
-            fplot(ax_we_vs_cond(ilam, istv), @(x) exp(pe(i, 2) + pe(i, 1) .* log(x)), '-', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 1.0)
+            x = wid_e(idx_both_positive)';
+            y = cond_simu(idx_both_positive,i)' ./ exp(-C2(sdv / sdv0, lamx / lx) * pc(i)); 
+            p_BA(i, :) = polyfit(log(x), log(y), 1);
+            fplot(ax_we_vs_cond(ilam, istv), @(x) exp(p_BA(i, 2) + p_BA(i, 1) .* log(x)), '-', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 1.0)
             % plot simulation data
             hold(ax_we_vs_cond(ilam, istv), 'on');
             ax_we_vs_cond(ilam, istv) = my_scatter(ax_we_vs_cond(ilam, istv), 'scatter', indiv_title,...
-                wid_e', lbl.we, 'log', ...
-                cond_simu(:,i)', 'Conductivity [md-ft]', 'log', ...
+                x, lbl.we, 'log', ...
+                y, 'Conductivity [md-ft]', 'log', ...
                 marker_sizes(1), cc(end-6+i,:), sprintf("P_c = %i psi",pc(i)));
             ax_we_vs_cond(ilam, istv).XLim = [min(wid_e), max(wid_e)];
         end
         if time_mode =="all"
             % save slope and intercept for slope analysis
-            ana.(field_name).pe_slope = pe(:,1);
-            ana.(field_name).pe_interp = exp(pe(:,2));
+            ana.(field_name).p_AB = [exp(p_BA(:,2)), p_BA(:,1)]'; % interp A, slope B
         end
 
 
@@ -275,9 +265,9 @@ for j = 1 : size(search_conditions, 2)
         %% FIGURE11 we vs wavg
         % linear fit on log-log plot
         idx_both_positive = (wid_a0 > 0) & (wid_e > 0);
-        p2 = polyfit(log(wid_e(idx_both_positive)'), log(wid_a0(idx_both_positive)'),1);
+        p_qp = polyfit(log(wid_e(idx_both_positive)'), log(wid_a0(idx_both_positive)'),1); % output of polyfit is [slope, interp]
         hold(ax_wide_vs_wavg(ilam),'on');
-        fplot(ax_wide_vs_wavg(ilam), @(x) exp(p2(2) + p2(1) .* log(x)), '-', 'Color', cc(find(stdev==sdv,1),:), 'DisplayName', '', 'LineWidth', 1.0);
+        fplot(ax_wide_vs_wavg(ilam), @(x) exp(p_qp(2) + p_qp(1) .* log(x)), '-', 'Color', cc(find(stdev==sdv,1),:), 'DisplayName', '', 'LineWidth', 1.0);
         % change to appropriate xlim by removing fplot effect.
         ax_wide_vs_wavg(ilam).XLim = [min(wid_e), max(wid_e)];
         ax_wide_vs_wavg(ilam) = my_scatter(ax_wide_vs_wavg(ilam), 'scatter', lamx_title(lamx),...
@@ -286,8 +276,7 @@ for j = 1 : size(search_conditions, 2)
             marker_sizes, cc(find(stdev==sdv,1),:), disp_names);
         if time_mode =="all"
             % save in struct
-            ana.(field_name).p2_slope = p2(1);
-            ana.(field_name).p2_intercept= exp(p2(2));
+            ana.(field_name).p_pq = [exp(p_qp(2)), p_qp(1)];
         end
         %% add exp data
         % hold(ax_cdc(j), 'on');
@@ -349,8 +338,6 @@ for istv = 1:numel(stdev)
     for ilam = 1:numel(lambdax)
         ax_cdc(ilam, istv).XLim = pc_lims;
         ax_cdc(ilam, istv).YLim = lims.cond;
-        xlabel(ax_cdc(ilam, istv), '');
-        ylabel(ax_cdc(ilam, istv), '');
         ax_cdc = my_setting_semilogy(ax_cdc);
         ax_cdc(ilam, istv) = add_ndata_on_plot(ax_cdc(ilam, istv), n(ilam, istv), x_ratio, y_ratio);
     end
@@ -370,8 +357,6 @@ end
 for istv = 1:numel(stdev)
     for ilam = 1:numel(lambdax)
         ax_hist(ilam, istv).XLim = [0, 3000];
-        xlabel(ax_hist(ilam, istv), '');
-        ylabel(ax_hist(ilam, istv), '');
         colororder(ax_hist(ilam, istv), cc);
     end
 end
@@ -403,8 +388,8 @@ for istv = 1:numel(stdev)
         hold(ax_we_vs_cond(ilam, istv),'on');
         ax_we_vs_cond(ilam, istv) = my_setting_semilogy(ax_we_vs_cond(ilam, istv));
         set(ax_we_vs_cond(ilam, istv), 'XScale', 'log');
-        %ax_we_vs_cond(ilam, istv).YLim = cond_lims;
-        %ax_we_vs_cond(ilam, istv).XLim = xlim_for_we_vs_cond;
+        ax_we_vs_cond(ilam, istv).YLim = cond_lims;
+        ax_we_vs_cond(ilam, istv).XLim = xlim_for_we_vs_cond;
         ax_we_vs_cond(ilam, istv) = add_ndata_on_plot(ax_we_vs_cond(ilam, istv), n(ilam, istv), x_ratio, y_ratio);
     end
 end
@@ -500,28 +485,6 @@ end
 ylim = [min(a(:,1)), max(a(:,2))];
 end
 
-function ax = add_ndata_on_plot(ax, n, x_ratio, y_ratio)
-% x coordinate of the text
-% y coordinate of the text
-hold(ax, 'on');
-x = ax.XLim(1) + (ax.XLim(2) - ax.XLim(1)) * x_ratio; % 0 is left, 1 is right
-y = ax.YLim(1) + (ax.YLim(2) - ax.YLim(1)) * y_ratio; % 0 is btm, 1 is top
-
-text(ax, x, y, ['n = ', num2str(n)]); %, ...
-% 'FitBoxToText', 'on', ...
-% 'BackgroundColor', 'white', ...
-% 'EdgeColor', 'black');
-end
-
-function axes = overall_xylabels(axes, xname, yname)
-for i = 1:numel(axes)
-    xlabel(axes(i), ''); % removing xylabels for indivisual plots
-    ylabel(axes(i), '');
-end
-t = ancestor(axes(1), 'tiledlayout');
-xlabel(t, xname, 'Interpreter', 'latex');
-ylabel(t, yname, 'Interpreter', 'latex');
-end
 
 function ax = shade_area(ax, xlim, curve1, curve2, color)
 x2 = [xlim, fliplr(xlim)];
@@ -544,8 +507,8 @@ legend_strings = string(get(lgh, 'String'));
 scatter_only = findobj(target_ax, 'Type', 'scatter');
 legend_idx = ~strcmp(legend_strings, '') & ~startsWith(legend_strings, 'data');
 if ~isempty(scatter_only)
-    legend(scatter_only, 'Location', 'southoutside');
-    set(lgh, 'FontName', 'Segoe UI', 'FontSize', 10, 'LineWidth', 1);
+    legend(scatter_only, 'Location', 'southoutside', 'Orientation', 'horizontal');
+    set(lgh, 'FontName', 'Times New Roman', 'FontSize', 10, 'LineWidth', 1);
     box(lgh,'on');
 end
 end
@@ -565,10 +528,4 @@ disp('Error 6: conductivity is not decreasing with pc.')
 err_cases(err_cases(:, 1) == "6", 1)
 end
 
-function all_figures_visiblity_on()
-allFigures = findall(0, 'Type', 'figure');
-% Loop through all figures and set them to visible
-for fig = allFigures'
-    fig.Visible = 'on';
-end
-end
+

@@ -162,6 +162,7 @@ wvec = w_o(:); % mm - caluclated using Deng's closure model
 wivec = w_avg_Mou(:);
 
 [A, B, C] = NK_correlation_params(ym ./ psi2pa);
+% [A, B, C] = TJ_correlation_params(ym ./ psi2pa, sdvd, lamxd);
 kfw_NK_mdft = get_conductivity(wivec .* mm2in, ph / psi2pa, A, B, C);
 kfw_NK = kfw_NK_mdft ./ 1.0133e15 .* ft2m; % [m3]
 
@@ -203,24 +204,7 @@ end
 end
 
 %% external functions
-% etched width = roughness
-function kfw_mdft = get_conductivity(w_inch, ph_psi, A, B, C)
-    kfw_mdft = A .* w_inch .^ B .* exp(C .* ph_psi); % subs inch
-end
 
-function [A, B, C] = NK_correlation_params(E)
-Sres_psi = 0.0201 .* E - 25137;
-    A = 1.476e7;
-    B = 2.466;
-    if 0 <= Sres_psi && Sres_psi< 2e4
-        coeff = [13.9, 1.3];
-    elseif Sres_psi >= 2e4
-        coeff = [3.8, 0.28];
-    else
-        error('Sres_psi must be positive.')
-    end
-    C = -0.001 .* (coeff(1) - coeff(2) .* log(Sres_psi));
-end
 
 function xmin = wmin(a)
     hpoints = length(a);
