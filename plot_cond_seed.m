@@ -6,6 +6,10 @@ lamx_title = @(lamx) ['$\lambda_{x} = ', num2str(lamx), ' [in]$'];
 
 cubic_law_mdft = @(w_inch) (w_inch .* 0.0254) .^ 3 ./ 12 .* 1.0133e15 .* 3.28084;
 wavg_MD = @(we_inch, stdd_for_k) 0.56 .* erf(0.8 * stdd_for_k) .* we_inch .^ (0.83);
+
+% load C2
+C2 = @(sdvd, lamxd) get_C2(sdvd, lamxd);
+
 %% first read all no matter what. Then filter dataStruct. Then plot.
 %% Input the stdev and lambdas here.
 time_mode = 'all'; % or 'all' % do you wanna include conductivities from other etching time cases?
@@ -33,7 +37,7 @@ ax_lamx_wa = create_tiledlayout(2, 2, 0.5);
 ax_cdc = create_tiledlayout(n3, n1, 1);
 ax_avg_cdc = create_tiledlayout(n3, n1, 1);
 %figs = {create_tiledlayout(1, 4, 1), create_tiledlayout(1, 4, 1), create_tiledlayout(1, 4, 1), create_tiledlayout(1, 4, 1), create_tiledlayout(1, 4, 1)};
-ax_C2_we = create_tiledlayout(4, 1, 1);
+
 ax_hist = create_tiledlayout(n3, n1, 1);
 ax_wavg_vs_cond = create_tiledlayout(n3, n1, 1);
 ax_we_vs_cond = create_tiledlayout(n3, n1, 1);
@@ -132,6 +136,7 @@ for j = 1 : size(search_conditions, 2)
 
         if time_mode =="600"
             % Overall C1 and C2 for each search conditions
+            %%TODO!!!!
             p_C2C1 = polyfit(pc(2:end)', log(mean_cdc(2:end)'), 1);
             hold(ax_cdc(ilam, istv), 'on')
             fplot(ax_cdc(ilam, istv), @(x) exp(p_C2C1(2) + p_C2C1(1) .* x), '--', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 2.0);
@@ -197,6 +202,7 @@ for j = 1 : size(search_conditions, 2)
             hold(ax_wavg_vs_cond(ilam, istv), 'on');
             idx_both_positive = (wid_a(:, i) > 0) & cond_simu(:, i) > 0;
             ps(i, :) = polyfit(log(wid_a(idx_both_positive,i)'), log(cond_simu(idx_both_positive,i)'), 1);
+            f = fit(wid_a(idx_both_positive,i), cond_simu(idx_both_positive,i), 'power1');
             fplot(ax_wavg_vs_cond(ilam, istv), @(x) exp(ps(i, 2) + ps(i, 1) .* log(x)), '-', 'Color', cc(end-6+i,:), 'DisplayName', '');
             hold(ax_wavg_vs_cond(ilam, istv), 'on');
 
@@ -224,25 +230,33 @@ for j = 1 : size(search_conditions, 2)
 
         %% FIGURE9: Etched vs average width plot
         p_BA = zeros(numel(pc),2);
+        delta_BAp = zeros(numel(pc), numel(wid_e));
+        delta_BAn = zeros(numel(pc), 1);
         for i = 1:numel(pc)
             % linear fit on log-log plot
             hold(ax_we_vs_cond(ilam, istv), 'on');
             idx_both_positive = (wid_e > 0) & cond_simu(:, i) > 0;
             x = wid_e(idx_both_positive)';
             y = cond_simu(idx_both_positive,i)' ./ exp(-C2(sdv / sdv0, lamx / lx) * pc(i)); 
-            p_BA(i, :) = polyfit(log(x), log(y), 1);
+            [p_BA(i, :), S_BA] = polyfit(log(x), log(y), 1);
             fplot(ax_we_vs_cond(ilam, istv), @(x) exp(p_BA(i, 2) + p_BA(i, 1) .* log(x)), '-', 'Color', cc(end-6+i,:), 'DisplayName', '', 'LineWidth', 1.0)
             % plot simulation data
             hold(ax_we_vs_cond(ilam, istv), 'on');
             ax_we_vs_cond(ilam, istv) = my_scatter(ax_we_vs_cond(ilam, istv), 'scatter', indiv_title,...
                 x, lbl.we, 'log', ...
-                y, 'Conductivity [md-ft]', 'log', ...
+                y, 'cond', 'log', ...
                 marker_sizes(1), cc(end-6+i,:), sprintf("P_c = %i psi",pc(i)));
             ax_we_vs_cond(ilam, istv).XLim = [min(wid_e), max(wid_e)];
+            [val, delta_BA] = polyval(p_BA(i, :), log(x), S_BA);
+            delta_BAp(i) = mean(exp(val + delta_BA) - exp(val));
+            delta_BAn(i) = mean(exp(val) - exp(val - delta_BA));
         end
         if time_mode =="all"
             % save slope and intercept for slope analysis
             ana.(field_name).p_AB = [exp(p_BA(:,2)), p_BA(:,1)]'; % interp A, slope B
+            disp(['err range = ' num2str(mean(delta_BAp, "all")), ', ', num2str(mean(delta_BAn, "all"))])
+            ana.(field_name).delta_AB = mean(delta_BAp, "all");
+            ana.(field_name).delta_ABn = mean(delta_BAn, "all");
         end
 
 
@@ -408,7 +422,7 @@ ax_cdc = overall_xylabels(ax_cdc, lbl.pc, lbl.kfw);
 ax_avg_cdc = overall_xylabels(ax_avg_cdc, lbl.pc, lbl.kfw);
 ax_hist = overall_xylabels(ax_hist, lbl.kfw, 'count');
 ax_wavg_vs_cond = overall_xylabels(ax_wavg_vs_cond, lbl.wa, lbl.kfw);
-ax_we_vs_cond = overall_xylabels(ax_we_vs_cond, lbl.we, lbl.kfw);
+ax_we_vs_cond = overall_xylabels(ax_we_vs_cond, lbl.we, '$Conductivity / exp(-C_{2}\sigma_{c}) [md-ft]$');
 
 %% formatting for 1 by n plot
 
@@ -426,14 +440,7 @@ ax_we_vs_cond = overall_xylabels(ax_we_vs_cond, lbl.we, lbl.kfw);
 %     overall_xylabels(figs{ipc}, lbl.sdv, lbl.kfw)
 % end
 
-% FIGURE4: C1 vs we plot
-for i = 1:numel(ax_C2_we)
-    %ax_C1_we(i).XLim = cond0_lims;
-    ax_C2_we(i).XLim = [0.120, 0.135];
-    xlabel(ax_C2_we(i), lbl.we);
-    ylabel(ax_C2_we(i), 'C2');
-    set(ax_C2_we(i), 'XScale', 'log', 'YScale', 'log');
-end
+
 
 % FIGURE6
 for i = 1:numel(ax_wavg_vs_kfw0)

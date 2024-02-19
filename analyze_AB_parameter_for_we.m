@@ -26,6 +26,14 @@ for j = 1:ndata
         end
         p_interp(j,:) = currentcase.(polyfit_name)(1, :); % A
         p_slope(j,:) = currentcase.(polyfit_name)(2, :); % B
+
+        if polyfit_name == "p_AB"
+            if j == 1
+                S = nan(ndata, 2);
+            end
+                S(j,:) = [currentcase.delta_AB, currentcase.delta_ABn];
+
+        end
     end
 end
 
@@ -38,8 +46,10 @@ end
 if polyfit_name == "p_AB"
     analyze_slope_and_interp_vs_sdv_and_lamx(p(:,:,2:5,:), 'AB')
     %% take the average of the slope at each lambda and sdv, then fit surface.
-    p = mean(p, 3);
+    p = mean(p(:,:,2:5,:), 3);
     analyze_slope_and_interp_vs_sdv_and_lamx(p, 'AB')
+    %
+    analyze_slope_and_interp_vs_sdv_and_lamx(cat(3, reshape(S(:, 1), [4, 4]),reshape(S(:, 2), [4, 4])), 'delta')
 elseif polyfit_name == "p_alphabeta"
     analyze_slope_and_interp_vs_sdv_and_lamx(p, 'alphabeta')
 elseif polyfit_name == "p_pq"

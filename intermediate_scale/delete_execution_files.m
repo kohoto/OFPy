@@ -7,7 +7,9 @@ for iter=1:nlam*nsdv
 
     case_dir = sprintf('k%d%d', ilam, isdv);
     casepath = fullfile(batch_path, case_dir, 'etching');
-    delete(fullfile(casepath, "Acid_Fracturing.exe"));
+    if isfile(fullfile(casepath, "Acid_Fracturing.exe"))
+        delete(fullfile(casepath, "Acid_Fracturing.exe"));
+    end
 end
 
 end

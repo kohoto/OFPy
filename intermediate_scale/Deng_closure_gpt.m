@@ -8,6 +8,16 @@ ft2m = 0.304722;
 mm2in = 0.0393701;
 m2mm = 1000;
 
+f_c=1;
+CL=0.006;
+sigma=0.5;
+lambdax=0.7;
+lambdaz=0.1;
+sdvd=0.7;
+lamxd=0.7;
+sdvd_max = 1.0;
+lamxd_max = 1.0; % this was the max possible combination of the params from my corr.
+
 nx = 64;                 % Points number along length direction
 ny = 256;                % Points number along height direction
 Lx = 10 * ft2m;       % Fracture length in meter
@@ -18,11 +28,13 @@ pv = 6000 * psi2pa;       % Vertical stress in Pa
 ym = 4000000 * psi2pa;    % Young's modulus in Pa
 pr = 0.3;                     % Poisson ratio
 % pi = 3.141592654;             % PI
+E_psi = ym / psi2pa;
+
 
 dx = Lx / (nx - 1);
 dy = Ly / (ny - 1);
 sm = ym / 2 / (1 + pr);
-pcs = [0:1000:4000] .* psi2pa;
+pcs = [1000:1000:7000] .* psi2pa;
 w_i = zeros(nx, ny);
 
 
@@ -64,8 +76,20 @@ fclose(fid);
 w_i = w_avg_Mou;
 
 for ph = pcs
-    [wkf_nk, wkf_md] = getConductivity(data.wid_e__in, 1, 0.006, ym / psi2pa / 1e6, ph / psi2pa, 0.1, 0.5, 0.25);
-    disp(['NK_we: ', num2str(wkf_nk), ', MD_we: ', num2str(wkf_md)])
+    ph_psi = ph / psi2pa;
+
+    [A, B, C] = NK_correlation_params(E_psi);
+    kfw_NK_mdft = get_conductivity(data.wid_e__in, ph_psi, A, B, C);
+    
+    
+    [A, B, C] = MD_correlation_params(f_c, CL, E_psi / 1e6, sigma, lambdax, lambdaz);
+    kfw_MD_mdft = get_conductivity(data.wid_e__in, ph_psi, A, B, C);
+    
+    [A, B, C] = TJ_correlation_params(E_psi / 1e6, sdvd_max, lamxd_max);
+    kfw_TJ_mdft = get_conductivity(data.wid_e__in, ph_psi, A, B, C);
+
+    disp(['NK_we: ', num2str(kfw_NK_mdft), ', MD_we: ', num2str(kfw_MD_mdft), ', TJ_we: ', num2str(kfw_TJ_mdft)])
+
     % [wkf_nk, wkf_md] = getConductivity(data.w0_Mou, 1, 0.006, ym / psi2pa / 1e6, ph / psi2pa, 0.1, 0.5, 0.25);
     % disp(['NK_wavg: ', num2str(wkf_nk), ', MD_wavg: ', num2str(wkf_md)])
 end
@@ -161,18 +185,30 @@ yvec = repmat([0:dy:(ny-1)*dy] ./ ft2m, [nx, 1]); % ft
 wvec = w_o(:); % mm - caluclated using Deng's closure model
 wivec = w_avg_Mou(:);
 
-[A, B, C] = NK_correlation_params(ym ./ psi2pa);
-% [A, B, C] = TJ_correlation_params(ym ./ psi2pa, sdvd, lamxd);
-kfw_NK_mdft = get_conductivity(wivec .* mm2in, ph / psi2pa, A, B, C);
-kfw_NK = kfw_NK_mdft ./ 1.0133e15 .* ft2m; % [m3]
 
+ph_psi = ph / psi2pa;
+
+[A, B, C] = NK_correlation_params(E_psi);
+kfw_NK_mdft = get_conductivity(wivec .* mm2in, ph_psi, A, B, C);
+
+[A, B, C] = TJ_correlation_params(E_psi / 1e6, sdvd_max, lamxd_max);
+kfw_TJ_mdft = get_conductivity(wivec .* mm2in, ph_psi, A, B, C);
+
+
+kfw_NK = kfw_NK_mdft ./ 1.0133e15 .* ft2m; % [m3]
+kfw_TJ = kfw_TJ_mdft ./ 1.0133e15 .* ft2m; % [m3]
 % min-width thres in my model?? 
 wid_thres_exp = 3.28914e-3; % [mm]
 disp(['# of points that is less than the experimental scale width threshold = ', num2str(sum(wvec < wid_thres_exp)),...
     ' (', num2str(sum(wvec < wid_thres_exp) / numel(w_avg_Mou) * 100), ' %)']);
 disp(['# of points with 0 width = ', num2str(sum(wvec == 0)),...
     ' (', num2str(sum(wvec == 0) / numel(w_avg_Mou) * 100), ' %)']);
-wvec(wvec  < wid_thres_exp) = (12 .* kfw_NK(wvec  < wid_thres_exp)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
+
+%% change the width to experimental empirical correlation here!!!!!!!
+%wvec(wvec  < wid_thres_exp) = (12 .* kfw_NK(wvec  < wid_thres_exp)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
+wvec(wvec  < wid_thres_exp) = (12 .* kfw_TJ(wvec  < wid_thres_exp)) .^ (1 / 3) .* m2mm; % [mm] % for the location that is w_o = 0, use NK corr.
+
+
 wvec(wvec == 0) = wid_thres_exp; % for the location wvec = 0 even after assigning NK corr. width, use the threshold_width from the experimental scale.
 disp(['# of points with 0 width even after applying exp scale corr. = ', num2str(sum(wvec == wid_thres_exp)),...
     ' (', num2str(sum(wvec == wid_thres_exp) / numel(w_avg_Mou) * 100), ' %)']);

@@ -18,7 +18,9 @@ for iter=1:nlam*nsdv
 
     % Loop through the files and delete them
     for ifile = 1:length(files_to_delete)
-        delete(fullfile(casepath, files_to_delete(ifile).name));
+        if isfile(fullfile(casepath, files_to_delete(ifile).name))
+            delete(fullfile(casepath, files_to_delete(ifile).name));
+        end
     end
 end
 

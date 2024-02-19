@@ -1,21 +1,7 @@
-function [wkf_nk, wkf_md] = getConductivity(wIdeal_inch, f_c, CL, E_mpsi, pc_psi, sigma, lambdax, lambdaz, test1)
-if ~exist('test','var') test1=0; end
-% for test
-if test1
-    wIdeal_inch(:) = 0.04;
-end
-SRES_psi = 0.0201 .* E_mpsi * 1e6 - 25137;
-%% Nierode Kruk
-if SRES_psi<2e4
-    A = 1.476e7.*exp(-0.001.*(13.9-1.3.*log(SRES_psi)).*pc_psi); % md-ft-in^(-2.47)
-else
-    A = 1.476e7.*exp(-0.001.*(3.8-0.28.*log(SRES_psi)).*pc_psi);
-end
-B = 2.466;
-wkf_nk = A.*wIdeal_inch.^B;
-
+% NOTE: pc_psi < 500 is not applicable
+function [A, B, C] = MD_correlation_params(f_c, CL, E_mpsi, sigma, lambdax, lambdaz)
 %% Mou-Deng
-if E_mpsi<=1 || any(pc_psi<=500) || 0.15>lambdax || lambdax>1 || 0.004>lambdaz || lambdaz>0.5 || 0.1>sigma || sigma>0.9
+if E_mpsi<=1 || 0.15>lambdax || lambdax>1 || 0.004>lambdaz || lambdaz>0.5 || 0.1>sigma || sigma>0.9
     disp('Be aware that the Mou-Deng correlation is not valid for these inputs.')
 end
 
@@ -41,5 +27,5 @@ else
         C = (1.2*exp(0.952*f_c)+10.5*E_mpsi^-1.823).*1e-4;
     end
 end
-wkf_md = A.*wIdeal_inch.^B.* exp(-C.*pc_psi);
-end % function
+
+end

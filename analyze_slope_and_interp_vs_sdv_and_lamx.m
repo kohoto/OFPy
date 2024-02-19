@@ -21,14 +21,22 @@ axs = create_tiledlayout(1, 2, 0.5);
 
 if type == "C1C2" % traditional condcutivity decline curve (CDC) cefficients
     yname = {'C1 [md-ft]', 'C2 [1/psi]'};
+    fit_eqn = {'poly22', 'poly22'};
 elseif type == "alphabeta" % Modified cubic law coefficients
     yname = {'$\alpha$', '$\beta$'};
+    fit_eqn = {'poly22', 'poly22'};
 elseif type == "AB" % we vs cond/exp(-C2*sigmaC)
     yname = {"$A^{'}$", '$B$'};
+    fit_eqn = {'poly22', 'poly33'};
 elseif type == "pq"
     yname = {'p', 'q'};
+    fit_eqn = {'poly22', 'poly22'};
+elseif type == "delta"
+yname = {'delta22', 'delta33'};
+fit_eqn = {'poly33', 'poly33'};
 else
     yname = {'Intercept', 'Slope'};
+    fit_eqn = {'poly22', 'poly22'};
 end
 
 for i = 1:2
@@ -43,10 +51,11 @@ for i = 1:2
     p_fliped = shiftdim(p, ndims(p)-1);
     % Now operate on the first dimension, which was originally the last
     z = p_fliped(i, :, :, :)
+    z = log(z); % took log to make the value always positive
     % (1, sdv, lam, :)
     z(1, 2, 2, :) = nan;
-    z(1, 3, 2, :) = nan;
-    %z(1, 3, 2, :) = nan;
+    z(1, 3, 1, :) = nan;
+    z(1, 2, 1, :) = nan;
     % Shift dimensions back
     p = shiftdim(p_fliped, 1);
 
@@ -56,7 +65,7 @@ for i = 1:2
     flat_lamxs = lamxs(~nn(1,:,:,:));
     flat_zs = z(~nn(1,:,:,:));
 
-    [pp, gof] = fit([flat_sdvs, flat_lamxs], flat_zs, 'poly33')
+    [pp, gof] = fit([flat_sdvs, flat_lamxs], flat_zs, fit_eqn{i})
     if type == "C1C2" && i == 2  % save slope
         save('C2_polyfit_coeffs.mat', 'pp');
     end
@@ -66,15 +75,23 @@ for i = 1:2
     if type == "AB" && i == 2  % save slope
         save('B_polyfit_coeffs.mat', 'pp');
     end
+    if type == "delta" && i == 2  % save slope
+        save('deltap_polyfit_coeffs.mat', 'pp');
+        % since delta is on loglog plot
+    end
+    if type == "delta" && i == 2  % save slope
+        save('deltan_polyfit_coeffs.mat', 'pp');
+        % since delta is on loglog plot
+    end
     sdvs_2d = sdvs(:, :, 1);
     lamxs_2d = lamxs(:, :, 1);
 
-    Z_fit = feval(pp, [sdvs_2d(:), lamxs_2d(:)]);
+    Z_fit = exp(feval(pp, [sdvs_2d(:), lamxs_2d(:)])); 
 
     Z_fit = reshape(Z_fit, [4, 4]);
     surf(axs(i), sdvs(:, :, 1), lamxs(:, :, 1), Z_fit, 'FaceColor', cc(3, :), 'FaceAlpha', 0.5, 'EdgeColor',  cc(3, :)); % Plot fitted surface
     hold(axs(i), 'on')
-    scatter3(axs(i), sdvs(:), lamxs(:), z(:), [], cc(1, :), 'filled'); % Plot data points
+    scatter3(axs(i), sdvs(:), lamxs(:), exp(z(:)), [], cc(1, :), 'filled'); % Plot data points
     xlabel(axs(i), lbl.sdvD, 'Interpreter', 'latex');
     ylabel(axs(i), lbl.lamxD, 'Interpreter', 'latex');
     zlabel(axs(i), yname{i}, 'Interpreter', 'latex');

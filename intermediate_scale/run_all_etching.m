@@ -1,7 +1,7 @@
 close all; clear;
 % provide batch name here!
 %batch_dir = 'case1-seed4785478';
-batch_dir = 'case1-seed2785478';
+batch_dir = 'case1-seed1785478_TJ';
 
 
 % Step 1: Create folders named k[1-4][1-4] in a source directory
@@ -17,7 +17,8 @@ if ~exist(batch_path, 'dir')
     mkdir(batch_path)
 end
 
-parfor iter=1:nlam*nsdv
+%parfor iter=1:nlam*nsdv
+for iter=1:nlam*nsdv
     ilam = ceil(iter / nlam);
     isdv = mod(iter, nsdv) + 1;
     generate_roughness_under_pc(batch_dir, ilam, isdv) % run Acid_Fracturing.exe.
