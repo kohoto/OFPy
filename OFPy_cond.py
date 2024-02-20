@@ -36,6 +36,9 @@ def calc_cond(case_directory):
     dens = 1.e3  # [kg/m3]
     mu = 0.001
     dy = ly / ny
+    if inp["ly"] == 120.0:
+        dens = 1.1e3 # to have the same as Mou
+        mu = 0.0005
 
     cond_dict  = {}
     pcs = [pc * 1000 for pc in list(range(5))]
@@ -113,8 +116,11 @@ if __name__ == "__main__":
     import os
     # case_directory = '//coe-fs.engr.tamu.edu/Grads/tohoko.tj/Documents/seed7000-stdev0_15\lambda1_0-0_5-stdev0_15'
     # case_directory = 'C:/Users/tohoko.tj/dissolCases/no_roughness_mineralogy/no_roughness'
-    # case_directory = 'C:/Users/tohoko.tj/dissolCases/temp2000/lambda5_0-1_0-stdev0_075'
+    # case_directory = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_05/seed0116-stdev0_05/lambda1_0-1_0-stdev0_05'
+    case_directory = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng/case1/cl0_005/case1-cl0_005-m00-k01/k01'
+    calc_cond(case_directory)
 
+    """
     # dissolCases_dir = 'R:/PETE/Hill_Dan/Students/Tajima_Tohoko/dissolCases2/stdev0_1'
     dissolCases_dir = 'C:/Users/tohoko.tj/OneDrive - Texas A&M University/Documents/20_Reseach/MouDeng'
     root, batch_dirs, files = next(os.walk(dissolCases_dir))
@@ -123,6 +129,7 @@ if __name__ == "__main__":
         for case_directory in case_dirs:
             print('working on %s' % batch_directory + '/' + case_directory)
             calc_cond(dissolCases_dir + '/' + batch_directory + '/' + case_directory)
+    """
 
     # Run conductivity calculation for specific cases
     # cases = [

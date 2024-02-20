@@ -75,7 +75,6 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
     hmaj1 = inp["hmaj1"]
     hmin1 = inp["hmin1"]
     seed = inp["seed"]
-    print("Before reading inp cwd:", os.getcwd())
     df_points = edit_polyMesh.read_OF_points(orig_points_path, nrows=(nx + 1) * (ny + 1) * (nz + 1))
     df_points['index_column'] = df_points.index
 
@@ -98,17 +97,19 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
 
 
         # copy mesh from etching project dir to each conductivity dir
-        pcs = [pc * 1000 for pc in list(range(5))]
+        pcs = [pc * 1000 for pc in list(range(8))]
         for pc in pcs:
-            os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
-            os.system(
-                "mkdir -p constant/polyMesh; "  # create directory if not exist
-                "cp -r ../etching/constant/polyMesh constant; ")    # copy all mesh related files
+            dir = case_directory + "/conductivity" + str(pc)
+            if os.path.exists(dir):
+                os.chdir(dir)  #these directory already exist from prepBatch
+                os.system(
+                    "mkdir -p constant/polyMesh; "  # create directory if not exist
+                    "cp -r ../etching/constant/polyMesh constant; ")    # copy all mesh related files
 
-            df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(), pc=pc)
-            edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
-                                            df_points_deformed)  # write new mesh in constant/polyMesh/
-            os.chdir(initial_dir)
+                df_points_deformed = deform_blockMesh.deform_blockMesh(inp, df_points.copy(), pc=pc)
+                edit_polyMesh.write_OF_polyMesh('points', len(df_points_deformed), # current directory must be conductivity1000 etc
+                                                df_points_deformed)  # write new mesh in constant/polyMesh/
+                os.chdir(initial_dir)
     elif mode == 'etching':
         # run blockMesh and polyMesh
         os.chdir(case_directory + "/etching")
