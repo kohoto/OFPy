@@ -149,10 +149,8 @@ def prep_case(case_directory, mode='etching'):  # For Linux and Windows (no OF c
 
     else:
         # copy mesh from start project dir to each conductivity dir
-        pcs = [pc * 1000 for pc in list(range(5))]
+        pcs = [pc * 1000 for pc in list(range(8))]
         for pc in pcs:
-            print("Before chdir cwd:", os.getcwd())
-            print("case_directory: ", case_directory)
             os.chdir(case_directory + "/conductivity" + str(pc))  #these directory already exist from prepBatch
             # os.system(
             #     "mkdir -p constant/polyMesh; "  # create directory if not exist

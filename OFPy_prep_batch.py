@@ -92,7 +92,7 @@ def prep_batch_MouDeng(batch_directory, MouDeng_dir):
     :param MouDeng_dir: path to the parent "dissolCases" directory.
     :return: a set of the OF projects ready to run.
     """
-    cases = ['conductivity' + str(pc * 1000) for pc in list(range(5))]
+    cases = ['conductivity' + str(pc * 1000) for pc in list(range(8))]
     # get polyMesh from etching folder.
     os.chdir(batch_directory)
     dir_list = os.listdir(batch_directory)
